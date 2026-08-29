@@ -1,0 +1,10 @@
+PYTM THREAT SEVERITY SUMMARY
+========================================
+Very High   : 20
+High        : 72
+Medium      : 104
+Low         : 14
+Very Low    : 4
+Unknown     : 0
+----------------------------------------
+Total Threats: 214

@@ -1,0 +1,42 @@
+[
+ {
+  "RuleID": "enterprise-database-password",
+  "Description": "Detects hard-coded database passwords",
+  "StartLine": 4,
+  "EndLine": 4,
+  "StartColumn": 2,
+  "EndColumn": 47,
+  "Match": "REDACTED = \"TestPassword123!DoNotUse\"",
+  "Secret": "REDACTED",
+  "File": "app/config.py",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.2195282,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "app/config.py:enterprise-database-password:4"
+ },
+ {
+  "RuleID": "enterprise-api-key",
+  "Description": "Detects hard-coded Enterprise API keys",
+  "StartLine": 3,
+  "EndLine": 3,
+  "StartColumn": 2,
+  "EndColumn": 33,
+  "Match": "REDACTED = \"AKIAIOSFODNN7EXAMPLE\"",
+  "Secret": "REDACTED",
+  "File": "app/config.py",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 2.807355,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "app/config.py:enterprise-api-key:3"
+ }
+]

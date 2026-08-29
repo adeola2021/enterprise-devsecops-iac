@@ -1,0 +1,65 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfvars
+terraform/*.tfvars.json
+terraform/crash.log
+terraform/crash.*.log
+
+# Terraform backups
+*.tfstate.backup
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Secrets / private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.bak
+terraform-backup-*/
+
+# Terraform working directory
+terraform/.terraform/
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Python virtual environments
+venv/
+.venv/
+
+# Terraform backup directories
+terraform-backup-*/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example

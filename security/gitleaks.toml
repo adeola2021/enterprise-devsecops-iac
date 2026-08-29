@@ -1,0 +1,24 @@
+title = "Enterprise DevSecOps Custom Secret Rules"
+
+[[rules]]
+id = "enterprise-api-key"
+description = "Detects hard-coded Enterprise API keys"
+regex = '''(?i)(api[_-]?key|apikey)\s*[:=]\s*["'][A-Za-z0-9_\-]{16,}["']'''
+secretGroup = 1
+keywords = [
+    "api_key",
+    "api-key",
+    "apikey"
+]
+
+[[rules]]
+id = "enterprise-database-password"
+description = "Detects hard-coded database passwords"
+regex = '''(?i)(database[_-]?password|db[_-]?password)\s*[:=]\s*["'][^"']{8,}["']'''
+secretGroup = 1
+keywords = [
+    "database_password",
+    "database-password",
+    "db_password",
+    "db-password"
+]

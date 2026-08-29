@@ -1,0 +1,7 @@
+db_password = "REPLACE_WITH_SECURE_TEST_PASSWORD"
+vpc_id = "vpc-REPLACE_WITH_REAL_VPC_ID"
+subnet_id = "subnet-REPLACE_WITH_REAL_SUBNET_ID"
+application_ami = "ami-REPLACE_WITH_REAL_AMI_ID"
+
+# Optional; defaults to postgres16
+postgres_parameter_family = "postgres16"

@@ -1,0 +1,17 @@
+# Enterprise DevSecOps - Contextual Checkov Exceptions
+#
+# These checks are intentionally excluded because the associated controls
+# are not applicable to the specific architectural purpose of these buckets.
+#
+# CKV2_AWS_62 - S3 event notifications
+#   The replica and access-log buckets are destination/logging buckets.
+#   Event notifications are not required for their intended function.
+#
+# CKV_AWS_144 - S3 cross-region replication
+#   The access_logs bucket is itself the centralized logging destination.
+#   Replicating it would be an additional DR requirement rather than a
+#   baseline security requirement for this environment.
+
+skip-check:
+  - CKV2_AWS_62
+  - CKV_AWS_144

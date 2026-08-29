@@ -1,0 +1,98 @@
+PYTM RISK SUMMARY BY TARGET
+======================================================================
+
+Target: API Gateway
+  Very High: 5
+  High:      16
+  Medium:    19
+  Low:       3
+  Very Low:  1
+  High-Risk Total: 21
+
+Target: Authentication Service
+  Very High: 5
+  High:      16
+  Medium:    19
+  Low:       3
+  Very Low:  1
+  High-Risk Total: 21
+
+Target: Order Service
+  Very High: 5
+  High:      16
+  Medium:    19
+  Low:       3
+  Very Low:  1
+  High-Risk Total: 21
+
+Target: User Database
+  Very High: 0
+  High:      1
+  Medium:    2
+  Low:       1
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: Order Database
+  Very High: 0
+  High:      1
+  Medium:    2
+  Low:       1
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: External Payment API
+  Very High: 5
+  High:      16
+  Medium:    19
+  Low:       3
+  Very Low:  1
+  High-Risk Total: 21
+
+Target: HTTPS Request
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: Authentication Request
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: Order Request
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: User Lookup
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: Order Data
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1
+
+Target: Payment Transaction
+  Very High: 0
+  High:      1
+  Medium:    4
+  Low:       0
+  Very Low:  0
+  High-Risk Total: 1

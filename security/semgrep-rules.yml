@@ -1,0 +1,9 @@
+rules:
+  - id: dangerous-subprocess-shell
+    languages:
+      - python
+    message: "Potential command injection: avoid shell=True with subprocess."
+    severity: ERROR
+    patterns:
+      - pattern: |
+          subprocess.$FUNC(..., shell=True, ...)

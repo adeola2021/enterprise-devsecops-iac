@@ -1,0 +1,16 @@
+@startuml
+actor actor_InternetUser_d2006ce1bb as "Internet User"
+entity server_APIGateway_f8af758679 as "API Gateway"
+entity server_AuthenticationService_2c440ebe53 as "Authentication Service"
+entity server_OrderService_0291419f72 as "Order Service"
+database datastore_UserDatabase_c76a0a7067 as "User Database"
+database datastore_OrderDatabase_c6f87088c2 as "Order Database"
+entity server_ExternalPaymentAPI_9345ab4c19 as "External Payment API"
+
+actor_InternetUser_d2006ce1bb -> server_APIGateway_f8af758679: HTTPS Request
+server_APIGateway_f8af758679 -> server_AuthenticationService_2c440ebe53: Authentication Request
+server_APIGateway_f8af758679 -> server_OrderService_0291419f72: Order Request
+server_AuthenticationService_2c440ebe53 -> datastore_UserDatabase_c76a0a7067: User Lookup
+server_OrderService_0291419f72 -> datastore_OrderDatabase_c6f87088c2: Order Data
+server_OrderService_0291419f72 -> server_ExternalPaymentAPI_9345ab4c19: Payment Transaction
+@enduml
