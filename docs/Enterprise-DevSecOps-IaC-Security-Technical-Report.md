@@ -1,295 +1,315 @@
-# ENTERPRISE DEVSECOPS INFRASTRUCTURE-AS-CODE SECURITY PIPELINE
+# Enterprise DevSecOps Infrastructure-as-Code Security Pipeline
 
-## Technical Implementation and Security Assessment Report
+## Technical Security Assessment, Remediation and Validation Report
 
-**Project:** Enterprise DevSecOps IaC Security Pipeline
-**Author:** Segun Jemilohun
-**Repository:** https://github.com/adeola2021/enterprise-devsecops-iac
-**Primary Platform:** Amazon Web Services (AWS)
-**Infrastructure-as-Code:** Terraform
-**Security Assessment Tools:** Checkov, Gitleaks, Semgrep, PyTM
-**Repository:** GitHub
-**Final Branch:** `main`
+**Repository:** `adeola2021/enterprise-devsecops-iac`
+**Platform:** GitHub
+**Primary Branch:** `main`
+**Assessment Status:** COMPLETED
+**Final Security Gate:** PASSED
+**Report Date:** 30 August 2026
 
 ---
 
 # 1. Executive Summary
 
-This project implements an enterprise-oriented **DevSecOps Infrastructure-as-Code (IaC) security pipeline** designed to integrate security controls directly into the infrastructure development lifecycle.
+This project implements an enterprise-oriented DevSecOps Infrastructure-as-Code (IaC) security pipeline designed to identify, remediate and continuously validate security risks before cloud infrastructure and application components are deployed.
 
-The implementation addresses security risks across cloud infrastructure, application code, secrets, configuration, and architectural threat exposure. The project follows a **shift-left security** approach, whereby security weaknesses are identified and remediated before infrastructure is deployed.
+The implementation combines Infrastructure-as-Code security, application static analysis, secret detection, threat modelling, preventive AWS security controls and automated security gates.
 
-The solution combines Terraform-based infrastructure provisioning with automated security validation using:
+The project demonstrates a defense-in-depth security approach across:
 
-* Terraform validation and formatting.
-* Checkov Infrastructure-as-Code security scanning.
-* Gitleaks secrets detection.
-* Semgrep static application security testing.
-* PyTM threat modelling.
-* Automated security-gate scripts.
-* AWS encryption and key-management controls.
-* S3 logging, versioning, lifecycle management and replication.
-* IAM-based access control.
-* SQS-based event notification.
-* Security evidence generation and retention.
+* Terraform Infrastructure-as-Code
+* AWS cloud security controls
+* Application source code
+* Secret and credential detection
+* Static Application Security Testing (SAST)
+* Threat modelling
+* Security policy enforcement
+* Automated security validation
+* Security evidence and audit reporting
 
-The project deliberately began with vulnerable configurations to demonstrate a complete security lifecycle:
+The final validation demonstrates that the remediated Terraform configuration satisfies the implemented Checkov security requirements.
 
-**Identify → Assess → Remediate → Re-test → Validate → Commit → Publish**
+Final Checkov verification recorded:
 
-The final security validation produced **105 successful Checkov checks, zero failed checks, zero skipped checks and zero parsing errors across 31 Terraform resources**.
+| Metric             |     Result |
+| ------------------ | ---------: |
+| Checkov Version    |     3.3.15 |
+| Resources Assessed |         31 |
+| Passed Checks      |        105 |
+| Failed Checks      |          0 |
+| Skipped Checks     |          0 |
+| Parsing Errors     |          0 |
+| Security Gate      | **PASSED** |
 
-The final Gitleaks working-tree scan also reported **no leaks**, while the Git-history scan reported **no leaks across the scanned commit history**.
+Gitleaks also completed successfully against both the working tree and Git history, with no secrets detected.
 
-The final Git repository was verified to be clean and synchronized with GitHub.
+The repository is available at:
+
+**GitHub:** https://github.com/adeola2021/enterprise-devsecops-iac
 
 ---
 
 # 2. Project Background
 
-Modern cloud environments increasingly rely on Infrastructure-as-Code to provision and manage infrastructure. Although IaC improves consistency and automation, insecure infrastructure definitions can introduce vulnerabilities at scale.
+Modern cloud environments increasingly depend on Infrastructure-as-Code to provision networking, compute, storage, databases and security services.
 
-A single insecure Terraform configuration can potentially result in:
+Although IaC improves consistency and automation, insecure Terraform configurations can introduce significant risks such as:
 
-* Publicly accessible storage.
-* Unencrypted data.
-* Excessive permissions.
-* Weak network controls.
-* Inadequate logging.
-* Poor data-retention controls.
-* Insufficient disaster recovery mechanisms.
-* Credential exposure.
-* Insecure application configurations.
+* Publicly accessible cloud resources
+* Inadequate encryption
+* Missing access controls
+* Weak logging
+* Missing backup or replication controls
+* Inadequate lifecycle management
+* Hard-coded credentials
+* Insecure application configurations
+* Excessive IAM permissions
+* Poor visibility of security threats
 
-This project addresses these risks by integrating security testing into the infrastructure development lifecycle.
-
-The project therefore treats security as a continuous engineering activity rather than a final deployment-stage review.
+The objective of this project was therefore to demonstrate how security controls can be integrated directly into the infrastructure development lifecycle rather than relying exclusively on post-deployment security reviews.
 
 ---
 
 # 3. Project Objectives
 
-The primary objectives were to:
+The project objectives were to:
 
-1. Implement secure cloud infrastructure using Terraform.
-2. Identify security weaknesses in Infrastructure-as-Code.
-3. Establish automated IaC security scanning.
-4. Detect secrets and credentials before they enter the repository.
-5. Apply static security analysis to application code.
-6. Implement AWS encryption and key-management controls.
-7. Implement secure S3 configuration.
-8. Establish logging and monitoring mechanisms.
-9. Implement cross-region replication.
-10. Implement event-driven security monitoring.
-11. Conduct structured threat modelling.
-12. Establish automated security gates.
-13. Preserve security assessment evidence.
-14. Demonstrate vulnerability remediation.
-15. Validate the final infrastructure before repository publication.
+1. Secure AWS Infrastructure-as-Code using Terraform.
+2. Identify insecure infrastructure configurations before deployment.
+3. Detect hard-coded credentials and sensitive information.
+4. Perform static analysis of application source code.
+5. Implement preventive cloud security controls.
+6. Apply encryption and secure data-storage controls.
+7. Implement S3 versioning, lifecycle management and replication.
+8. Implement logging and event notification mechanisms.
+9. Apply appropriate IAM controls.
+10. Perform structured threat modelling.
+11. Establish automated security gates.
+12. Preserve security assessment and remediation evidence.
+13. Validate the final infrastructure configuration.
+14. Demonstrate a repeatable DevSecOps security workflow.
 
 ---
 
 # 4. Scope
 
-The project covers the security assessment and hardening of:
+The assessment covered the following project components:
 
-### Infrastructure
+```text
+Enterprise DevSecOps Repository
+│
+├── Terraform Infrastructure
+│   ├── AWS S3
+│   ├── AWS KMS
+│   ├── AWS IAM
+│   ├── AWS SQS
+│   ├── AWS EC2
+│   ├── AWS RDS
+│   ├── Security Groups
+│   └── Supporting resources
+│
+├── Application
+│   ├── Python application
+│   └── Configuration management
+│
+├── Security Controls
+│   ├── Checkov
+│   ├── Gitleaks
+│   ├── Semgrep
+│   └── PyTM
+│
+├── Security Automation
+│   └── security_gate.sh
+│
+├── Threat Model
+│   ├── Threat matrix
+│   ├── High-risk threats
+│   ├── Severity summary
+│   └── Architecture diagrams
+│
+└── Security Evidence
+    ├── Vulnerable baseline
+    ├── Remediation evidence
+    └── Final validation
+```
 
-* Amazon S3
-* AWS KMS
-* AWS IAM
-* Amazon RDS
-* Amazon EC2
-* VPC/security groups
-* Amazon SQS
-* S3 replication
-* S3 logging
-* S3 lifecycle controls
+---
+
+# 5. Security Architecture
+
+The solution follows a defense-in-depth model.
+
+```text
+                    ┌──────────────────────┐
+                    │      Developer       │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │   Git Repository     │
+                    │      GitHub          │
+                    └──────────┬───────────┘
+                               │
+             ┌─────────────────┼──────────────────┐
+             │                 │                  │
+             ▼                 ▼                  ▼
+       ┌──────────┐      ┌──────────┐      ┌──────────┐
+       │ Semgrep  │      │ Gitleaks │      │ Checkov  │
+       │   SAST   │      │  Secrets │      │   IaC    │
+       └────┬─────┘      └────┬─────┘      └────┬─────┘
+            │                 │                  │
+            └─────────────────┼──────────────────┘
+                              ▼
+                    ┌──────────────────────┐
+                    │ Automated Security   │
+                    │       Gate           │
+                    └──────────┬───────────┘
+                               │
+                         PASS / FAIL
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ Terraform Validation │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ AWS Infrastructure   │
+                    │ Security Controls    │
+                    └──────────────────────┘
+```
+
+Threat modelling provides an additional security layer by identifying architectural threats before implementation.
+
+---
+
+# 6. Technology Stack
+
+| Technology | Security Purpose                     |
+| ---------- | ------------------------------------ |
+| Terraform  | Infrastructure-as-Code               |
+| AWS        | Cloud infrastructure                 |
+| Checkov    | IaC security scanning                |
+| Gitleaks   | Secret detection                     |
+| Semgrep    | Static application security analysis |
+| PyTM       | Threat modelling                     |
+| Python     | Application and automation           |
+| Git        | Version control                      |
+| GitHub     | Source-code repository               |
+| Bash       | Security automation                  |
+| KMS        | Encryption key management            |
+| S3         | Secure object storage                |
+| SQS        | Event notification integration       |
+| IAM        | Identity and access management       |
+
+---
+
+# 7. Initial Security Assessment
+
+The project maintained a vulnerable baseline to demonstrate the effectiveness of the security controls.
+
+The baseline assessment identified multiple security weaknesses across the infrastructure.
+
+Examples of controls subsequently addressed included:
+
 * S3 event notifications
+* S3 replication
+* S3 versioning
+* S3 lifecycle management
+* Encryption
+* Access logging
+* Public access restrictions
+* IAM permissions
+* Infrastructure configuration weaknesses
+* Secret-management concerns
 
-### Application
+Historical vulnerable configurations and assessment outputs have been retained in the repository as evidence.
 
-* Python application code
-* Application configuration
-* Environment-based secret handling
-
-### Security controls
-
-* Checkov
-* Gitleaks
-* Semgrep
-* PyTM
-* Terraform validation
-* Automated security gate
-* Git repository controls
-
----
-
-# 5. Technology Stack
-
-| Component              | Technology    |
-| ---------------------- | ------------- |
-| Operating System       | Ubuntu        |
-| Infrastructure-as-Code | Terraform     |
-| Cloud Platform         | AWS           |
-| Source Control         | Git / GitHub  |
-| IaC Security           | Checkov       |
-| Secret Detection       | Gitleaks      |
-| SAST                   | Semgrep       |
-| Threat Modelling       | PyTM          |
-| Encryption             | AWS KMS       |
-| Storage                | Amazon S3     |
-| Messaging              | Amazon SQS    |
-| Database               | Amazon RDS    |
-| Compute                | Amazon EC2    |
-| Automation             | Bash / Python |
-| Repository Branch      | `main`        |
-
----
-
-# 6. Security Architecture
-
-The implemented security architecture follows a layered defense model.
+The vulnerable configuration is maintained separately under:
 
 ```text
-                       DEVELOPER
-                           |
-                           v
-                    GIT REPOSITORY
-                         GitHub
-                           |
-          +----------------+----------------+
-          |                |                |
-          v                v                v
-      Gitleaks          Semgrep          Checkov
-    Secret Scan         SAST             IaC Scan
-          |                |                |
-          +----------------+----------------+
-                           |
-                           v
-                  SECURITY GATE
-                           |
-                    +------+------+
-                    |             |
-                  FAIL           PASS
-                    |             |
-                  STOP            v
-                              Terraform
-                              Validation
-                                  |
-                                  v
-                             AWS IaC
-                                  |
-       +------------+-------------+-------------+
-       |            |             |             |
-       v            v             v             v
-      S3           RDS           EC2           IAM
-       |
-       +----------------+
-       |                |
-       v                v
-     KMS             SQS Events
-       |
-       v
- Encryption / Monitoring
-
-                  PyTM Threat Model
-                         |
-                         v
-                Threat Identification
-                         |
-                         v
-                    Risk Analysis
+archive/vulnerable-terraform/
 ```
+
+This separation prevents the historical demonstration configuration from being confused with the final remediated Terraform implementation.
 
 ---
 
-# 7. Initial Vulnerable State
+# 8. Infrastructure Security Controls
 
-The project maintained an intentionally vulnerable Terraform baseline in:
+## 8.1 S3 Data Protection
 
-```text
-archive/vulnerable-terraform/main.vulnerable.tf
-```
+The final Terraform implementation applies multiple controls to S3 resources.
 
-This allowed the security pipeline to demonstrate actual vulnerability identification rather than simply documenting theoretical controls.
+These include:
 
-The vulnerable baseline was assessed using Checkov and other security controls before remediation.
+* Versioning
+* Server-side encryption
+* KMS encryption
+* Bucket public-access blocking
+* Lifecycle management
+* Access logging
+* Cross-region replication
+* Event notifications
 
-Evidence from the Checkov assessment demonstrates that security weaknesses were initially identified within the Terraform configuration.
+These controls collectively improve:
 
-For example, an earlier Checkov result identified deficiencies relating to S3 controls, including:
-
-* S3 versioning.
-* S3 lifecycle configuration.
-* S3 event notifications.
-* Cross-region replication.
-
-The project subsequently introduced the required controls and repeatedly re-ran the security assessment.
-
----
-
-# 8. Terraform Security Implementation
-
-Terraform was used to define the AWS infrastructure in a reproducible and auditable manner.
-
-The main infrastructure configuration is:
-
-```text
-terraform/main.tf
-```
-
-Terraform was validated using:
-
-```bash
-terraform -chdir=terraform fmt -check -recursive
-terraform -chdir=terraform validate
-```
-
-Final validation returned:
-
-```text
-Success! The configuration is valid.
-```
-
-This demonstrates that the final Terraform configuration was syntactically and structurally valid.
+* Confidentiality
+* Integrity
+* Availability
+* Recoverability
+* Auditability
 
 ---
 
-# 9. AWS S3 Security Controls
+## 8.2 S3 Versioning
 
-S3 was one of the principal security-control areas in the project.
+S3 versioning was enabled for applicable buckets.
 
-The final Terraform implementation included separate resources for:
-
-* Enterprise data bucket.
-* Enterprise replica bucket.
-* Access-logging bucket.
-* S3 versioning.
-* S3 lifecycle management.
-* S3 encryption.
-* S3 public-access blocking.
-* S3 logging.
-* S3 replication.
-* S3 event notifications.
-
-The project therefore moved beyond simple bucket creation and implemented multiple layers of protection.
+Versioning protects against accidental deletion and overwriting of objects and provides additional recovery capability.
 
 ---
 
-## 9.1 S3 Versioning
+## 8.3 S3 Lifecycle Management
 
-Versioning was implemented for the primary data bucket, replica bucket and access-log bucket.
+Lifecycle configurations were implemented to control object retention and non-current versions.
 
-This protects against accidental deletion or overwriting of objects and provides an additional recovery mechanism.
+This supports:
 
-The final Checkov result confirms that the previously identified versioning issue for the access-log bucket was remediated.
+* Storage management
+* Data retention governance
+* Reduction of unnecessary storage
+* Management of historical object versions
 
 ---
 
-## 9.2 S3 Public Access Protection
+## 8.4 Cross-Region Replication
 
-The buckets implement:
+Cross-region replication was implemented between the primary enterprise data bucket and the replica bucket.
+
+This provides an additional resilience mechanism for data recovery and regional failure scenarios.
+
+The replication configuration uses a dedicated IAM role rather than unrestricted permissions.
+
+---
+
+## 8.5 Encryption
+
+AWS KMS was incorporated into the infrastructure for encryption-related controls.
+
+Encryption was applied to relevant storage and messaging resources.
+
+The project also enables KMS key rotation.
+
+---
+
+## 8.6 S3 Public Access Protection
+
+S3 public-access-block configurations were implemented to reduce the risk of unintended public exposure.
+
+The controls include:
 
 ```text
 block_public_acls       = true
@@ -298,208 +318,82 @@ ignore_public_acls      = true
 restrict_public_buckets = true
 ```
 
-This reduces the likelihood of unintended public exposure.
+---
+
+## 8.7 S3 Access Logging
+
+Access logging was configured for relevant S3 buckets.
+
+Logs are directed to a dedicated access-log bucket, improving auditability and security monitoring.
 
 ---
 
-## 9.3 S3 Encryption
+## 8.8 S3 Event Notifications
 
-The project implements server-side encryption using AWS KMS.
+S3 event notifications were implemented using Amazon SQS.
 
-The access-log bucket specifically uses:
+This provides an event-driven mechanism for monitoring relevant bucket activity.
 
-```text
-sse_algorithm     = "aws:kms"
-kms_master_key_id = aws_kms_key.enterprise.arn
-```
-
-Bucket keys are also enabled.
-
-This provides encryption-at-rest protection for stored data.
+The implementation includes an SQS queue policy restricting message submission to the expected S3 source.
 
 ---
 
-## 9.4 S3 Lifecycle Management
+# 9. Identity and Access Management
 
-Lifecycle configurations were implemented to manage:
+The infrastructure implements dedicated IAM permissions for S3 replication.
 
-* Incomplete multipart uploads.
-* Non-current object versions.
-* Object expiration.
+The replication role is assumed by the S3 service and is granted permissions required for replication activities.
 
-The access-log bucket was configured with a retention period of 365 days and non-current-version expiration.
+The implementation avoids granting broad administrative privileges to the replication process.
 
-An earlier Checkov failure relating to lifecycle management was subsequently remediated.
+This supports the principle of least privilege.
 
 ---
 
-## 9.5 S3 Access Logging
+# 10. Secret Management
 
-S3 access logging was implemented using the dedicated:
+Secret exposure was specifically assessed using Gitleaks.
+
+Sensitive values are not intended to be committed directly into the repository.
+
+Terraform variables are used for sensitive configuration such as database credentials.
+
+The repository also contains:
 
 ```text
-aws_s3_bucket.access_logs
+terraform/terraform.tfvars.example
 ```
 
-bucket.
+rather than requiring actual secret values to be committed.
 
-The primary data bucket and replica bucket were configured to send access logs to the dedicated logging bucket.
+The `.gitignore` configuration excludes sensitive Terraform and credential-related files including:
 
-This improves auditability and supports security monitoring.
+```text
+*.tfvars
+*.tfstate
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+```
 
 ---
 
-# 10. Cross-Region Replication
+# 11. Gitleaks Security Validation
 
-The project implemented cross-region S3 replication using:
+Gitleaks was executed against the working tree.
 
-```text
-aws_s3_bucket_replication_configuration.enterprise_data
-```
-
-The architecture uses:
-
-```text
-Primary Region
-us-east-1
-     |
-     | Replication
-     v
-Replica Region
-us-west-2
-```
-
-A dedicated IAM role was created for S3 replication.
-
-The configuration includes permissions required to:
-
-* Read replication configuration.
-* List the source bucket.
-* Read object versions.
-* Replicate objects.
-* Replicate deletes.
-* Replicate tags.
-
-This improves resilience and provides a mechanism for cross-region recovery.
-
----
-
-# 11. S3 Event Notifications
-
-An Amazon SQS queue was implemented for S3 event processing:
-
-```text
-aws_sqs_queue.enterprise_events
-```
-
-The S3 bucket notification configuration sends events to the queue.
-
-A queue policy restricts message submission to the S3 service and limits the source to the designated S3 bucket.
-
-This provides an event-driven mechanism that can support downstream monitoring and security workflows.
-
----
-
-# 12. AWS KMS
-
-A dedicated KMS key was implemented to protect sensitive resources.
-
-The configuration includes:
-
-* Customer-managed KMS key.
-* Key rotation.
-* IAM-controlled access.
-* S3 encryption.
-* SQS encryption.
-
-Key rotation was enabled:
-
-```text
-enable_key_rotation = true
-```
-
-This provides stronger cryptographic key-management practices than relying solely on unencrypted storage.
-
----
-
-# 13. IAM Security
-
-A dedicated IAM role was created for S3 replication.
-
-The role uses an S3 service principal:
-
-```text
-s3.amazonaws.com
-```
-
-The permissions are scoped to the resources required for replication.
-
-This demonstrates the use of service-specific permissions rather than broad administrative access.
-
----
-
-# 14. Application Security
-
-The project also includes a sample Python application:
-
-```text
-app/
-├── config.py
-└── vulnerable_app.py
-```
-
-The application configuration retrieves sensitive values through environment variables rather than embedding actual credentials directly in source code.
-
-For example:
-
-```text
-ENTERPRISE_API_KEY
-ENTERPRISE_DATABASE_PASSWORD
-```
-
-This supports secure separation between application configuration and credentials.
-
----
-
-# 15. Gitleaks Secret Detection
-
-Gitleaks was used to identify secrets and credential-like patterns.
-
-The final working-tree scan was executed using:
-
-```bash
-gitleaks detect \
-  --source . \
-  --no-git \
-  --report-format json \
-  --report-path reports/gitleaks-final-working-tree.json
-```
-
-Final result:
+Final working-tree verification produced:
 
 ```text
 scanned ~3926872 bytes (3.93 MB)
 no leaks found
 ```
 
-### Final working-tree status
+A separate Git-history scan was also performed.
 
-```text
-Findings: 0
-STATUS: PASS
-NO SECRETS DETECTED
-```
-
-A separate Git-history scan was also performed:
-
-```bash
-gitleaks detect \
-  --source . \
-  --report-format json \
-  --report-path reports/gitleaks-final-history.json
-```
-
-Result:
+The history verification reported:
 
 ```text
 1 commits scanned.
@@ -507,134 +401,258 @@ scanned ~2312874 bytes (2.31 MB)
 no leaks found
 ```
 
-### Security significance
+Final status:
 
-The two scans provide complementary evidence:
+**GITLEAKS: PASS**
 
-* The working-tree scan verifies the current project contents.
-* The history scan verifies the scanned Git history.
-
-Both produced **no leaks**.
+This provides evidence that no secrets were detected in the current working tree or Git history assessed by the scan.
 
 ---
 
-# 16. Semgrep Static Analysis
+# 12. Static Application Security Testing
 
-Semgrep was integrated into the security architecture to provide static analysis of application code.
+Semgrep was incorporated into the security workflow to identify security weaknesses within application source code.
 
-Custom security rules are maintained in:
+Security rules are maintained under:
 
 ```text
 security/semgrep-rules.yml
 ```
 
-The repository also retains:
+Semgrep evidence is retained within:
 
 ```text
-reports/semgrep-vulnerable.json
-reports/semgrep-remediated.json
-reports/semgrep-gate.json
+reports/
 ```
 
-This creates an auditable record of the application's security assessment and remediation lifecycle.
+This establishes application-level security analysis alongside the infrastructure security assessment.
 
 ---
 
-# 17. Threat Modelling
+# 13. Infrastructure Security Assessment with Checkov
 
-PyTM was used to perform structured threat modelling.
+Checkov was used to evaluate the Terraform infrastructure against security best practices.
 
-The implementation is maintained in:
-
-```text
-threat-model/threat_model.py
-```
-
-Generated evidence includes:
+The project used Checkov version:
 
 ```text
-reports/pytm-threat-model.json
-reports/pytm-threat-matrix.csv
-reports/pytm-high-risk-threats.csv
-reports/pytm-severity-summary.txt
-reports/pytm-target-risk-summary.txt
-reports/enterprise-threat-model.dot
-reports/enterprise-threat-model.png
-reports/enterprise-threat-model.svg
-reports/enterprise-threat-sequence.dot
+3.3.15
 ```
 
-The generated threat model identified **214 threats** across the modelled system.
+The final assessment covered:
 
-Examples of identified threat categories included:
+```text
+31 resources
+```
 
-* High-severity threats.
-* Very-high-severity threats.
-* Medium-severity threats.
-* Access-control threats.
-* Input-validation threats.
-* Data-security threats.
-* Availability threats.
-* Supply-chain threats.
+Final results:
 
-The evidence demonstrates that threat modelling was used as a design and risk-analysis activity rather than simply as documentation. The stored outputs allow individual threats and target components to be reviewed.
+| Checkov Metric | Final Result |
+| -------------- | -----------: |
+| Passed         |          105 |
+| Failed         |            0 |
+| Skipped        |            0 |
+| Parsing Errors |            0 |
+| Resources      |           31 |
+
+Final security status:
+
+```text
+STATUS: PASS
+SECURITY GATE: PASSED
+```
 
 ---
 
-# 18. Automated Security Gate
+# 14. Checkov Remediation Progression
 
-The central automation is:
+The remediation process was iterative.
+
+The project initially contained multiple failed security checks.
+
+The findings were progressively addressed through Terraform changes.
+
+Examples included:
+
+* S3 event notifications
+* S3 lifecycle configuration
+* S3 versioning
+* Cross-region replication
+* Security configuration improvements
+
+The final verification demonstrates that the previously identified Checkov findings were remediated to the configured acceptance criteria.
+
+The final state therefore changed from an infrastructure configuration with security findings to:
+
+```text
+105 Passed
+0 Failed
+0 Skipped
+0 Parsing Errors
+```
+
+---
+
+# 15. Security Exceptions
+
+Checkov exception documentation has been retained in:
+
+```text
+reports/checkov-exceptions.md
+```
+
+The final result nevertheless reports zero failed checks and zero skipped checks.
+
+This distinction is important because the repository preserves both the assessment history and the final security state.
+
+---
+
+# 16. Terraform Validation
+
+Terraform formatting was validated using:
+
+```bash
+terraform -chdir=terraform fmt -check -recursive
+```
+
+Terraform configuration validation was performed using:
+
+```bash
+terraform -chdir=terraform validate
+```
+
+The final validation returned:
+
+```text
+Success! The configuration is valid.
+```
+
+This confirms that the Terraform configuration is syntactically and structurally valid according to Terraform's validation process.
+
+---
+
+# 17. Security Automation
+
+The project includes:
 
 ```text
 scripts/security_gate.sh
 ```
 
-The security gate is designed to combine security controls and provide an explicit security decision.
+The security gate provides an automated mechanism for integrating multiple security checks into a repeatable workflow.
 
-Conceptually:
+The pipeline is designed around the principle:
 
 ```text
-                 SECURITY GATE
-                       |
-        +--------------+--------------+
-        |              |              |
-        v              v              v
-     Checkov        Gitleaks       Semgrep
-        |              |              |
-        +--------------+--------------+
-                       |
-                       v
-                Policy Decision
-                       |
-              +--------+--------+
-              |                 |
-            FAIL               PASS
-              |                 |
-             STOP            Continue
+Source Code
+     │
+     ▼
+Security Scanning
+     │
+     ├── Gitleaks
+     ├── Semgrep
+     └── Checkov
+     │
+     ▼
+Security Gate
+     │
+     ├── PASS → Continue
+     │
+     └── FAIL → Block / Remediate
 ```
 
-The repository retains security-gate evidence in:
+This approach helps prevent insecure configurations from progressing without security review.
+
+---
+
+# 18. Threat Modelling
+
+PyTM was used to model the application's security threats and attack surfaces.
+
+Threat-model evidence is retained under:
 
 ```text
-reports/security-gate.log
-reports/security-gate-pass.log
+reports/
+```
+
+including:
+
+```text
+pytm-high-risk-threats.csv
+pytm-severity-summary.txt
+pytm-target-risk-summary.txt
+pytm-threat-matrix.csv
+pytm-threat-model.json
+enterprise-threat-model.dot
+enterprise-threat-model.png
+enterprise-threat-model.svg
+enterprise-threat-sequence.dot
+```
+
+The threat model provides architectural context for understanding:
+
+* Threat actors
+* Trust boundaries
+* Attack surfaces
+* High-risk threats
+* Potential attack paths
+* Security control requirements
+
+---
+
+# 19. Security Evidence Repository
+
+The project retains evidence from the complete security lifecycle.
+
+Important evidence categories include:
+
+### Vulnerable Baseline
+
+```text
+reports/checkov-vulnerable-baseline.json
+reports/checkov-vulnerable-results.json
+reports/gitleaks-vulnerable.json
+reports/semgrep-vulnerable.json
+```
+
+### Remediation Evidence
+
+```text
+reports/checkov-remediated.json/
+reports/checkov-remediated-main.json/
+reports/checkov-remediated-final.json/
+reports/gitleaks-remediated.json
+reports/semgrep-remediated.json
+```
+
+### Final Verification
+
+```text
+reports/checkov-final.json/
+reports/gitleaks-final.json
+reports/gitleaks-final-working-tree.json
+reports/gitleaks-final-history.json
 reports/security-gate-final.log
 reports/security-gate-final-status.txt
 ```
 
+This provides an auditable progression from vulnerable baseline through remediation to final validation.
+
 ---
 
-# 19. Checkov Security Assessment
+# 20. Final Security Gate
 
-Checkov was used as the principal IaC security scanner.
+The final security gate was independently verified using the Checkov report.
 
-The final report was verified programmatically using:
+The verification script enforced:
 
 ```text
-reports/checkov-final.json/results_json.json
+failed == 0
+skipped == 0
+parsing_errors == 0
 ```
 
-The final verification produced:
+The resulting output was:
 
 ```text
 ==============================================
@@ -652,214 +670,39 @@ SECURITY GATE    : PASSED
 ==============================================
 ```
 
-### Final Checkov metrics
-
-| Metric              | Final Result |
-| ------------------- | -----------: |
-| Checkov Version     |       3.3.15 |
-| Terraform Resources |           31 |
-| Passed Checks       |      **105** |
-| Failed Checks       |        **0** |
-| Skipped Checks      |        **0** |
-| Parsing Errors      |        **0** |
-| Security Gate       |     **PASS** |
-
-This is the principal quantitative evidence that the final Terraform configuration satisfied the configured Checkov security controls.
+This represents the final security acceptance state of the project.
 
 ---
 
-# 20. Checkov Remediation Journey
+# 21. Final Repository Verification
 
-The project provides useful evidence of progressive remediation.
+The final repository was verified using Git.
 
-At one stage, the scan reported:
-
-```text
-Passed : 105
-Failed : 5
-```
-
-The remaining findings included:
+Repository:
 
 ```text
-CKV2_AWS_62
-S3 event notifications
-
-CKV_AWS_144
-S3 cross-region replication
-
-CKV2_AWS_61
-S3 lifecycle configuration
-
-CKV_AWS_21
-S3 versioning
+https://github.com/adeola2021/enterprise-devsecops-iac
 ```
 
-After remediation, the findings were reduced to:
+Remote:
 
 ```text
-Passed : 107
-Failed : 4
+origin  https://github.com/adeola2021/enterprise-devsecops-iac.git
 ```
 
-Then:
-
-```text
-Passed : 108
-Failed : 3
-```
-
-Finally:
-
-```text
-Passed : 105
-Failed : 0
-```
-
-The important outcome is not simply the final score; it demonstrates that the infrastructure was repeatedly assessed and hardened until the configured security gate passed.
-
----
-
-# 21. Security Findings and Remediation
-
-The major remediation themes were:
-
-| Security Area          | Initial Condition            | Remediation                             |
-| ---------------------- | ---------------------------- | --------------------------------------- |
-| S3 Versioning          | Missing on access-log bucket | Versioning enabled                      |
-| S3 Lifecycle           | Incomplete                   | Lifecycle configuration added           |
-| S3 Event Notifications | Missing                      | S3-to-SQS notification implemented      |
-| S3 Replication         | Missing                      | Cross-region replication implemented    |
-| S3 Logging             | Deficient                    | Dedicated access-log bucket implemented |
-| S3 Encryption          | Strengthened                 | KMS-backed encryption implemented       |
-| Public Access          | Security risk                | Public-access blocking enabled          |
-| Secret Exposure        | Potential risk               | Gitleaks validation implemented         |
-| Application Security   | Vulnerable baseline          | Semgrep controls implemented            |
-| Threat Exposure        | Not formally modelled        | PyTM threat model implemented           |
-
----
-
-# 22. Security Evidence Repository
-
-The repository maintains extensive evidence supporting the implementation.
-
-Important evidence includes:
-
-```text
-reports/
-```
-
-### Checkov
-
-```text
-checkov-vulnerable-baseline.json
-checkov-vulnerable-results.json
-checkov-remediated.json
-checkov-remediated-final.json
-checkov-final-pre-exceptions.json
-checkov-final.json
-checkov-exceptions.md
-```
-
-### Gitleaks
-
-```text
-gitleaks-vulnerable.json
-gitleaks-remediated.json
-gitleaks-final.json
-gitleaks-final-working-tree.json
-gitleaks-final-history.json
-```
-
-### Semgrep
-
-```text
-semgrep-vulnerable.json
-semgrep-remediated.json
-semgrep-gate.json
-```
-
-### Threat Model
-
-```text
-pytm-threat-model.json
-pytm-threat-matrix.csv
-pytm-high-risk-threats.csv
-pytm-severity-summary.txt
-pytm-target-risk-summary.txt
-enterprise-threat-model.png
-enterprise-threat-model.svg
-```
-
-### Security Gate
-
-```text
-security-gate.log
-security-gate-pass.log
-security-gate-final.log
-security-gate-final-status.txt
-```
-
-This evidence structure supports auditability and allows a reviewer to independently trace the project's security journey.
-
----
-
-# 23. Repository Security Controls
-
-The project uses `.gitignore` to prevent sensitive and temporary files from being committed.
-
-Important exclusions include:
-
-```text
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfvars
-terraform/*.tfvars.json
-*.pem
-*.key
-*.p12
-*.pfx
-.env
-venv/
-terraform-backup-*/
-```
-
-The final repository verification confirmed that Terraform state and sensitive key files were not present in the tracked project contents.
-
-The final Gitleaks scan additionally reported no secrets.
-
----
-
-# 24. Git Repository Verification
-
-The repository was initialized and committed to Git.
-
-The final branch is:
+Branch:
 
 ```text
 main
 ```
 
-The configured remote is:
+The branch tracks:
 
 ```text
-https://github.com/adeola2021/enterprise-devsecops-iac.git
+origin/main
 ```
 
-The latest project commit is:
-
-```text
-c95497d docs: add comprehensive project documentation
-```
-
-The preceding security-related commits include:
-
-```text
-86d280a docs: add final Gitleaks security verification reports
-e58ff99 feat: implement enterprise DevSecOps IaC security pipeline
-```
-
-The final Git verification returned:
+Final repository state:
 
 ```text
 On branch main
@@ -868,223 +711,212 @@ Your branch is up to date with 'origin/main'.
 nothing to commit, working tree clean
 ```
 
-This confirms that the local repository and GitHub repository were synchronized.
+This confirms that the final implementation and security evidence were committed and pushed successfully.
 
 ---
 
-# 25. Final End-to-End Verification
+# 22. Final Validation Summary
 
-The final verification consisted of multiple independent checks.
+| Security Domain   | Control                    | Result      |
+| ----------------- | -------------------------- | ----------- |
+| IaC               | Terraform formatting       | PASS        |
+| IaC               | Terraform validation       | PASS        |
+| IaC               | Checkov                    | PASS        |
+| IaC               | Checkov failed checks      | 0           |
+| IaC               | Checkov skipped checks     | 0           |
+| IaC               | Checkov parsing errors     | 0           |
+| Secrets           | Gitleaks working tree      | PASS        |
+| Secrets           | Gitleaks Git history       | PASS        |
+| Application       | Semgrep                    | Implemented |
+| Threat Management | PyTM                       | Implemented |
+| Storage           | S3 encryption              | Implemented |
+| Storage           | S3 versioning              | Implemented |
+| Storage           | S3 lifecycle               | Implemented |
+| Storage           | S3 replication             | Implemented |
+| Storage           | S3 access logging          | Implemented |
+| Monitoring        | S3 event notifications     | Implemented |
+| IAM               | Dedicated replication role | Implemented |
+| Repository        | Git status                 | Clean       |
+| Repository        | GitHub synchronization     | PASS        |
+| Security Gate     | Final                      | **PASSED**  |
 
-### Terraform
+---
+
+# 23. Security Improvement Outcome
+
+The project demonstrates a measurable improvement between the vulnerable baseline and the final infrastructure state.
+
+The most significant outcome is the reduction of final Checkov findings to:
 
 ```text
-Terraform format       : PASS
-Terraform validation   : PASS
+0 failed checks
 ```
 
-### Checkov
+while maintaining:
 
 ```text
-Resources              : 31
-Passed                 : 105
-Failed                 : 0
-Skipped                : 0
-Parsing Errors         : 0
-Security Gate          : PASS
+105 passed checks
+31 resources assessed
+0 skipped checks
+0 parsing errors
 ```
 
-### Gitleaks
+In addition, Gitleaks identified no secrets in the final working tree or scanned Git history.
+
+The result is a substantially stronger infrastructure security posture compared with the initial vulnerable configuration.
+
+---
+
+# 24. Key Security Principles Demonstrated
+
+The project demonstrates practical implementation of the following security principles:
+
+### Shift Left
+
+Security checks are performed before infrastructure deployment.
+
+### Defense in Depth
+
+Multiple independent security mechanisms are used rather than relying on one security scanner.
+
+### Least Privilege
+
+IAM permissions are scoped to required activities.
+
+### Secure by Default
+
+Public access restrictions, encryption and security validation are integrated into infrastructure configuration.
+
+### Continuous Validation
+
+Security checks can be repeated whenever infrastructure changes.
+
+### Evidence-Based Security
+
+Assessment results and remediation evidence are retained in the repository.
+
+### Separation of Historical and Production Configuration
+
+Vulnerable demonstration configurations are separated from the final remediated implementation.
+
+---
+
+# 25. Lessons Learned
+
+Several important lessons were demonstrated during the implementation.
+
+1. IaC security scanning should occur before deployment.
+2. Security controls should be encoded directly into Terraform where possible.
+3. Security findings often require iterative remediation.
+4. Automated security gates reduce reliance on manual security reviews.
+5. Secret detection should cover both the working tree and Git history.
+6. Historical security evidence is valuable for demonstrating remediation.
+7. Threat modelling provides important architectural context beyond automated scanners.
+8. Security controls should address confidentiality, integrity and availability together.
+9. Repository hygiene is an important component of DevSecOps.
+10. Final validation should be independently repeatable.
+
+---
+
+# 26. Recommendations
+
+For continued improvement of the project, the following controls are recommended:
+
+1. Integrate the security gate into GitHub Actions.
+2. Require security-gate success before merging pull requests.
+3. Store sensitive production values in AWS Secrets Manager or an equivalent secure secret-management platform.
+4. Implement remote Terraform state using encrypted S3 storage with state locking.
+5. Introduce dependency scanning for application packages.
+6. Add container image scanning if containerized workloads are introduced.
+7. Enable continuous AWS security monitoring.
+8. Integrate AWS CloudTrail and centralized security logging.
+9. Periodically review IAM permissions.
+10. Schedule recurring Checkov, Gitleaks and Semgrep scans.
+11. Periodically update Terraform and provider versions.
+12. Maintain threat models as the architecture evolves.
+13. Protect the `main` branch using GitHub branch protection rules.
+14. Require pull-request review before production changes.
+15. Maintain security evidence for audit and compliance purposes.
+
+---
+
+# 27. Conclusion
+
+The Enterprise DevSecOps IaC Security Pipeline successfully demonstrates how Infrastructure-as-Code security can be incorporated into an enterprise development lifecycle.
+
+The final implementation combines:
+
+* Terraform security controls
+* AWS security configuration
+* Checkov IaC scanning
+* Gitleaks secret detection
+* Semgrep application analysis
+* PyTM threat modelling
+* Automated security gates
+* Security evidence management
+* Git-based change control
+
+The final security validation achieved:
 
 ```text
-Working Tree           : PASS
-Git History            : PASS
-Secrets Detected       : 0
+31 Resources
+105 Passed
+0 Failed
+0 Skipped
+0 Parsing Errors
 ```
 
-### Git
+Gitleaks additionally reported:
 
 ```text
-Branch                 : main
-Remote                 : origin/main
-Working Tree           : CLEAN
+NO LEAKS FOUND
+```
+
+Terraform validation reported:
+
+```text
+Success! The configuration is valid.
+```
+
+The final security gate therefore achieved:
+
+```text
+STATUS        : PASS
+SECURITY GATE : PASSED
+```
+
+The implementation provides a strong foundation for extending the project into a fully automated CI/CD security pipeline with mandatory pull-request security gates, continuous cloud security monitoring and policy-as-code enforcement.
+
+---
+
+# 28. Repository
+
+The complete project, implementation, security evidence and supporting documentation are available at:
+
+**https://github.com/adeola2021/enterprise-devsecops-iac**
+
+Repository structure:
+
+```text
+enterprise-devsecops-iac/
+│
+├── README.md
+├── docs/
+│   └── Enterprise-DevSecOps-IaC-Security-Technical-Report.md
+├── app/
+├── archive/
+├── reports/
+├── scripts/
+├── security/
+├── terraform/
+└── threat-model/
 ```
 
 ---
 
-# 26. Final Security Posture
+# Appendix A — Final Security Evidence
 
-The final security posture can be summarized as follows:
-
-| Security Control               | Final Status |
-| ------------------------------ | ------------ |
-| Terraform syntax/configuration | PASS         |
-| Terraform formatting           | PASS         |
-| Checkov IaC security           | PASS         |
-| Checkov failed checks          | **0**        |
-| Checkov skipped checks         | **0**        |
-| Checkov parsing errors         | **0**        |
-| Resources assessed             | **31**       |
-| Checkov controls passed        | **105**      |
-| Gitleaks working-tree scan     | PASS         |
-| Gitleaks Git-history scan      | PASS         |
-| Secrets detected               | **0**        |
-| Semgrep                        | Implemented  |
-| Threat modelling               | Implemented  |
-| AWS KMS                        | Implemented  |
-| S3 encryption                  | Implemented  |
-| S3 versioning                  | Implemented  |
-| S3 lifecycle                   | Implemented  |
-| S3 logging                     | Implemented  |
-| S3 replication                 | Implemented  |
-| S3 event notifications         | Implemented  |
-| IAM replication controls       | Implemented  |
-| Security evidence              | Retained     |
-| GitHub publication             | PASS         |
-| Working tree                   | CLEAN        |
-
----
-
-# 27. Risk Reduction Assessment
-
-The project demonstrates measurable security improvement between the vulnerable baseline and final implementation.
-
-The most significant improvements were achieved in the following areas:
-
-### Confidentiality
-
-Improved through:
-
-* KMS-backed encryption.
-* S3 public-access blocking.
-* IAM-based permissions.
-* Secret detection.
-
-### Integrity
-
-Improved through:
-
-* S3 versioning.
-* IaC security validation.
-* Git-based change control.
-* Automated security gates.
-
-### Availability
-
-Improved through:
-
-* Cross-region S3 replication.
-* Lifecycle management.
-* Event-driven monitoring.
-
-### Accountability
-
-Improved through:
-
-* S3 access logging.
-* Security scan reports.
-* Threat-model outputs.
-* Git history.
-* Security-gate logs.
-
----
-
-# 28. Lessons Learned
-
-The implementation demonstrated several important DevSecOps principles.
-
-### 28.1 Security must be automated
-
-Manual reviews alone are insufficient for infrastructure that changes frequently. Automated scanning provides repeatable security validation.
-
-### 28.2 IaC security must occur before deployment
-
-Checkov successfully identified configuration weaknesses before infrastructure deployment.
-
-### 28.3 Security controls often require multiple layers
-
-No single control provides complete protection. Encryption, access control, logging, replication, secrets detection and IaC scanning work together.
-
-### 28.4 Security evidence is important
-
-Retaining vulnerable, remediated and final scan results makes the security lifecycle auditable.
-
-### 28.5 Secrets should never be treated as ordinary configuration
-
-Gitleaks provides an additional control for detecting accidental credential exposure.
-
-### 28.6 Threat modelling complements automated scanning
-
-Static scanners identify known configuration weaknesses, while threat modelling provides broader visibility into architectural attack paths and potential threats.
-
----
-
-# 29. Recommendations for Further Enhancement
-
-Although the final security gate passed, the following improvements could further mature the solution:
-
-1. Integrate the security gate directly into GitHub Actions.
-2. Require successful security checks before pull-request merging.
-3. Enable branch protection on `main`.
-4. Add Terraform plan scanning to the CI/CD workflow.
-5. Introduce Terraform provider version management and scheduled updates.
-6. Add infrastructure drift detection.
-7. Integrate centralized AWS logging and monitoring.
-8. Introduce AWS CloudTrail and GuardDuty where appropriate.
-9. Add container image scanning if application containers are introduced.
-10. Implement cryptographic image signing using Cosign for containerized workloads.
-11. Generate and retain SLSA provenance for software builds.
-12. Introduce policy-as-code enforcement at deployment time.
-13. Schedule recurring security scans to detect newly disclosed vulnerabilities.
-14. Integrate security metrics into management dashboards.
-
----
-
-# 30. Limitations
-
-The project is a security engineering demonstration and therefore has some limitations.
-
-The final Checkov PASS demonstrates compliance with the configured Checkov checks; it does not imply that every possible AWS security risk has been eliminated.
-
-Similarly:
-
-* A clean Gitleaks result does not guarantee that secrets could never be introduced in the future.
-* Semgrep coverage depends on the configured rules.
-* Threat-model completeness depends on the system model and assumptions.
-* Terraform validation confirms configuration validity but does not guarantee secure runtime behavior.
-* AWS runtime controls should be validated after actual deployment.
-
-Accordingly, the security gate should be treated as a continuous control rather than a one-time certification.
-
----
-
-# 31. Conclusion
-
-The Enterprise DevSecOps IaC Security Pipeline successfully demonstrates the integration of security into Infrastructure-as-Code development.
-
-The project progressed from an intentionally vulnerable baseline through automated assessment and remediation to a final validated security state.
-
-The final implementation incorporates:
-
-* Terraform-based infrastructure.
-* AWS security controls.
-* KMS encryption.
-* S3 access controls.
-* S3 versioning.
-* S3 lifecycle management.
-* S3 access logging.
-* Cross-region replication.
-* S3 event notifications.
-* IAM-controlled replication.
-* Gitleaks secret detection.
-* Semgrep static analysis.
-* Checkov IaC security scanning.
-* PyTM threat modelling.
-* Automated security-gate validation.
-* Security evidence retention.
-* Git-based change control.
-
-The strongest final evidence is the completed Checkov validation:
+## Checkov
 
 ```text
 Checkov Version : 3.3.15
@@ -1093,125 +925,57 @@ Passed          : 105
 Failed          : 0
 Skipped         : 0
 Parsing Errors  : 0
-
 STATUS           : PASS
 SECURITY GATE    : PASSED
 ```
 
-This is supported by the final Gitleaks validation:
+## Gitleaks
 
 ```text
-scanned ~3.93 MB
+Working Tree:
+no leaks found
+
+Git History:
+1 commits scanned.
 no leaks found
 ```
 
-and the Git-history validation:
+## Terraform
 
 ```text
-1 commits scanned
-no leaks found
+Success! The configuration is valid.
 ```
 
-The final Git repository was also confirmed to be synchronized with GitHub and contained no outstanding changes.
+## Git
 
-Overall, the project demonstrates a practical **shift-left, defense-in-depth DevSecOps security model** in which security is embedded throughout infrastructure development, validation, remediation, version control and release readiness.
+```text
+On branch main
+Your branch is up to date with 'origin/main'.
 
----
-
-# 32. Final Project Repository
-
-**GitHub Repository**
-
-https://github.com/adeola2021/enterprise-devsecops-iac
-
-**Branch:** `main`
-
-**Final commit:** `c95497d`
-
-**Repository status:** Clean and synchronized with `origin/main`.
-
----
-
-# Appendix A — Key Evidence Commands
-
-### Terraform validation
-
-```bash
-terraform -chdir=terraform fmt -check -recursive
-terraform -chdir=terraform validate
-```
-
-### Checkov final verification
-
-```bash
-python3 - <<'PY'
-import json
-
-path = "reports/checkov-final.json/results_json.json"
-
-with open(path, encoding="utf-8") as f:
-    data = json.load(f)
-
-s = data["summary"]
-
-print(f"Passed         : {s['passed']}")
-print(f"Failed         : {s['failed']}")
-print(f"Skipped        : {s['skipped']}")
-print(f"Parsing Errors : {s['parsing_errors']}")
-print(f"Resources      : {s['resource_count']}")
-
-assert s["failed"] == 0
-assert s["skipped"] == 0
-assert s["parsing_errors"] == 0
-
-print("STATUS: PASS")
-PY
-```
-
-### Gitleaks working-tree verification
-
-```bash
-gitleaks detect \
-  --source . \
-  --no-git \
-  --report-format json \
-  --report-path reports/gitleaks-final-working-tree.json
-```
-
-### Gitleaks Git-history verification
-
-```bash
-gitleaks detect \
-  --source . \
-  --report-format json \
-  --report-path reports/gitleaks-final-history.json
-```
-
-### Git final verification
-
-```bash
-git remote -v
-git branch -vv
-git status
-git log --oneline -3
+nothing to commit, working tree clean
 ```
 
 ---
 
-# Appendix B — Final Security Statement
+# Appendix B — Primary Evidence Files
 
-**Final Enterprise DevSecOps IaC Security Gate: PASSED**
+The following repository files provide supporting evidence for the assessment:
 
-**Checkov: 105 Passed / 0 Failed**
+```text
+reports/checkov-final.json/results_json.json
+reports/gitleaks-final.json
+reports/gitleaks-final-working-tree.json
+reports/gitleaks-final-history.json
+reports/security-gate-final.log
+reports/security-gate-final-status.txt
+reports/semgrep-gate.json
+reports/pytm-threat-matrix.csv
+reports/pytm-high-risk-threats.csv
+reports/pytm-severity-summary.txt
+reports/enterprise-threat-model.png
+reports/enterprise-threat-model.svg
+```
 
-**Terraform Resources Assessed: 31**
+---
 
-**Gitleaks: 0 Secrets Detected**
-
-**Terraform Validation: PASSED**
-
-**Git Repository: CLEAN**
-
-**GitHub Repository: SYNCHRONIZED**
-
-**Overall Project Status: SECURITY VALIDATION COMPLETE**
+**End of Report**
