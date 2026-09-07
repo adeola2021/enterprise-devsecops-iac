@@ -1,0 +1,104 @@
+name: IaC Security Pipeline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  iac-security:
+    name: IaC Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------------------------------------
+      # 1. Checkout repository
+      # --------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # 2. Setup Terraform
+      # --------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # --------------------------------------------------
+      # 3. Terraform Format Check
+      # --------------------------------------------------
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      # --------------------------------------------------
+      # 4. Terraform Initialization
+      # --------------------------------------------------
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      # --------------------------------------------------
+      # 5. Terraform Validation
+      # --------------------------------------------------
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      # --------------------------------------------------
+      # 6. Gitleaks Secret Scanning
+      # --------------------------------------------------
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --------------------------------------------------
+      # 7. Checkov IaC Security Scan
+      # --------------------------------------------------
+      - name: Checkov Terraform Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: false
+
+      # --------------------------------------------------
+      # 8. Install Conftest
+      # --------------------------------------------------
+      - name: Install Conftest
+        run: |
+          CONFTEST_VERSION="0.56.0"
+          curl -L \
+            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            -o conftest.tar.gz
+          tar -xzf conftest.tar.gz
+          sudo mv conftest /usr/local/bin/
+          conftest --version
+
+      # --------------------------------------------------
+      # 9. Run OPA/Conftest Policy Test
+      # --------------------------------------------------
+      - name: OPA Policy Enforcement
+        run: |
+          conftest test terraform-policy-test/tfplan-compliant.json \
+            --policy policy/
+
+      # --------------------------------------------------
+      # 10. Security Pipeline Summary
+      # --------------------------------------------------
+      - name: Security Pipeline Summary
+        if: success()
+        run: |
+          echo "=========================================="
+          echo " IaC SECURITY PIPELINE PASSED"
+          echo "=========================================="
+          echo "Terraform format: PASSED"
+          echo "Terraform validation: PASSED"
+          echo "Gitleaks: PASSED"
+          echo "Checkov: PASSED"
+          echo "OPA/Conftest: PASSED"
+          echo "=========================================="
