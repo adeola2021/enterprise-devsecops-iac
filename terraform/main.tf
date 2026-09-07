@@ -154,7 +154,18 @@ resource "aws_s3_bucket_lifecycle_configuration" "enterprise_data" {
 # ============================================================
 # S3 - REPLICA BUCKET
 # ============================================================
+resource "aws_s3_bucket" "replica_access_logs" {
+  provider = aws.replica
 
+  bucket = "enterprise-devsecops-replica-access-logs"
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Replica Access Logs"
+    }
+  )
+}
 resource "aws_s3_bucket" "enterprise_replica" {
   provider = aws.replica
 
@@ -166,6 +177,172 @@ resource "aws_s3_bucket" "enterprise_replica" {
       Name = "Enterprise Data Replica"
     }
   )
+}
+resource "aws_kms_key" "replica_access_logs" {
+  provider = aws.replica
+
+  description             = "KMS key for enterprise replica S3 access logs"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Replica Access Logs KMS Key"
+    }
+  )
+}
+
+data "aws_iam_policy_document" "replica_access_logs_kms_policy" {
+  statement {
+    sid    = "EnableRootPermissions"
+    effect = "Allow"
+
+    principals {
+      type = "AWS"
+      identifiers = [
+        "arn:aws:iam::${data.aws_caller_identity.replica.account_id}:root"
+      ]
+    }
+
+    actions   = ["kms:*"]
+    resources = [aws_kms_key.replica_access_logs.arn]
+  }
+}
+
+resource "aws_kms_key_policy" "replica_access_logs" {
+  provider = aws.replica
+
+  key_id = aws_kms_key.replica_access_logs.id
+  policy = data.aws_iam_policy_document.replica_access_logs_kms_policy.json
+}
+
+resource "aws_s3_bucket_public_access_block" "replica_access_logs" {
+  provider = aws.replica
+
+  bucket = aws_s3_bucket.replica_access_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "replica_access_logs" {
+  provider = aws.replica
+
+  bucket = aws_s3_bucket.replica_access_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "replica_access_logs" {
+  provider = aws.replica
+
+  bucket = aws_s3_bucket.replica_access_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.replica_access_logs.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "replica_access_logs" {
+  provider = aws.replica
+
+  bucket = aws_s3_bucket.replica_access_logs.id
+
+  rule {
+    id     = "replica-access-logs-lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+
+    expiration {
+      days = 90
+    }
+  }
+}
+
+resource "aws_s3_bucket_logging" "enterprise_replica" {
+  provider = aws.replica
+
+  bucket        = aws_s3_bucket.enterprise_replica.id
+  target_bucket = aws_s3_bucket.replica_access_logs.id
+  target_prefix = "replica/"
+}
+
+resource "aws_kms_key" "enterprise_replica" {
+  provider = aws.replica
+
+  description             = "KMS key for enterprise replica S3 bucket"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Replica KMS Key"
+    }
+  )
+}
+
+data "aws_caller_identity" "replica" {
+  provider = aws.replica
+}
+
+data "aws_iam_policy_document" "enterprise_replica_kms_policy" {
+  statement {
+    sid    = "EnableRootPermissions"
+    effect = "Allow"
+
+    principals {
+      type = "AWS"
+
+      identifiers = [
+        "arn:aws:iam::${data.aws_caller_identity.replica.account_id}:root"
+      ]
+    }
+
+    actions = [
+      "kms:*"
+    ]
+
+    resources = [
+      aws_kms_key.enterprise_replica.arn
+    ]
+  }
+}
+
+resource "aws_kms_key_policy" "enterprise_replica" {
+  provider = aws.replica
+
+  key_id = aws_kms_key.enterprise_replica.id
+  policy = data.aws_iam_policy_document.enterprise_replica_kms_policy.json
+}
+resource "aws_s3_bucket_server_side_encryption_configuration" "enterprise_replica" {
+  provider = aws.replica
+
+  bucket = aws_s3_bucket.enterprise_replica.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.enterprise_replica.arn
+    }
+
+    bucket_key_enabled = true
+  }
 }
 
 resource "aws_s3_bucket_versioning" "enterprise_replica" {
@@ -189,20 +366,6 @@ resource "aws_s3_bucket_public_access_block" "enterprise_replica" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "enterprise_replica" {
-  provider = aws.replica
-
-  bucket = aws_s3_bucket.enterprise_replica.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-
-    bucket_key_enabled = true
-  }
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "enterprise_replica" {
   provider = aws.replica
 
@@ -212,12 +375,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "enterprise_replica" {
     id     = "replica-lifecycle"
     status = "Enabled"
 
-    filter {}
+    filter {
+      prefix = ""
+    }
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
     }
-
     noncurrent_version_expiration {
       noncurrent_days = 90
     }
