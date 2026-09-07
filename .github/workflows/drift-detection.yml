@@ -1,0 +1,55 @@
+name: Terraform Drift Detection
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  drift-detection:
+    name: Detect Terraform Drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Drift Check
+        working-directory: terraform
+        shell: bash
+        run: |
+          set +e
+
+          terraform plan -detailed-exitcode \
+            -out=tfplan
+
+          EXIT_CODE=$?
+
+          echo "Terraform plan exit code: $EXIT_CODE"
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "✅ No infrastructure drift detected."
+            exit 0
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "⚠️ Infrastructure changes/drift detected."
+            exit 2
+          else
+            echo "❌ Terraform plan failed."
+            exit 1
+          fi
