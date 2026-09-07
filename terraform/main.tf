@@ -9,6 +9,10 @@ terraform {
   }
 }
 
+# ============================================================
+# PROVIDERS
+# ============================================================
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -17,11 +21,35 @@ provider "aws" {
   alias  = "replica"
   region = "us-west-2"
 }
+
+# ============================================================
+# DATA
+# ============================================================
+
 data "aws_caller_identity" "current" {}
 
-# --------------------------------------------------
+# ============================================================
+# LOCAL ORGANIZATIONAL TAGS
+# ============================================================
+
+locals {
+  mandatory_tags = {
+    Environment = var.environment
+    Owner       = var.owner
+    CostCenter  = var.cost_center
+  }
+
+  primary_tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise DevSecOps"
+    }
+  )
+}
+
+# ============================================================
 # KMS
-# --------------------------------------------------
+# ============================================================
 
 resource "aws_kms_key" "enterprise" {
   description             = "Enterprise DevSecOps encryption key"
@@ -45,6 +73,13 @@ resource "aws_kms_key" "enterprise" {
       }
     ]
   })
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise DevSecOps KMS Key"
+    }
+  )
 }
 
 resource "aws_kms_alias" "enterprise" {
@@ -52,17 +87,19 @@ resource "aws_kms_alias" "enterprise" {
   target_key_id = aws_kms_key.enterprise.key_id
 }
 
-# --------------------------------------------------
-# S3 - Primary Bucket
-# --------------------------------------------------
+# ============================================================
+# S3 - PRIMARY BUCKET
+# ============================================================
 
 resource "aws_s3_bucket" "enterprise_data" {
   bucket = "enterprise-devsecops-demo-data"
 
-  tags = {
-    Name        = "Enterprise Data"
-    Environment = "dev"
-  }
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Data"
+    }
+  )
 }
 
 resource "aws_s3_bucket_public_access_block" "enterprise_data" {
@@ -114,53 +151,62 @@ resource "aws_s3_bucket_lifecycle_configuration" "enterprise_data" {
   }
 }
 
-# --------------------------------------------------
-# S3 - Replica Bucket
-# --------------------------------------------------
+# ============================================================
+# S3 - REPLICA BUCKET
+# ============================================================
 
 resource "aws_s3_bucket" "enterprise_replica" {
   provider = aws.replica
 
   bucket = "enterprise-devsecops-demo-data-replica"
 
-  tags = {
-    Name        = "Enterprise Data Replica"
-    Environment = "dev"
-  }
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Data Replica"
+    }
+  )
 }
 
 resource "aws_s3_bucket_versioning" "enterprise_replica" {
   provider = aws.replica
-  bucket   = aws_s3_bucket.enterprise_replica.id
+
+  bucket = aws_s3_bucket.enterprise_replica.id
 
   versioning_configuration {
     status = "Enabled"
   }
 }
+
 resource "aws_s3_bucket_public_access_block" "enterprise_replica" {
   provider = aws.replica
-  bucket   = aws_s3_bucket.enterprise_replica.id
+
+  bucket = aws_s3_bucket.enterprise_replica.id
 
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "enterprise_replica" {
   provider = aws.replica
-  bucket   = aws_s3_bucket.enterprise_replica.id
+
+  bucket = aws_s3_bucket.enterprise_replica.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "aws:kms"
+      sse_algorithm = "AES256"
     }
 
     bucket_key_enabled = true
   }
 }
+
 resource "aws_s3_bucket_lifecycle_configuration" "enterprise_replica" {
   provider = aws.replica
-  bucket   = aws_s3_bucket.enterprise_replica.id
+
+  bucket = aws_s3_bucket.enterprise_replica.id
 
   rule {
     id     = "replica-lifecycle"
@@ -178,17 +224,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "enterprise_replica" {
   }
 }
 
-# --------------------------------------------------
-# S3 Access Logging Bucket
-# --------------------------------------------------
+# ============================================================
+# S3 - ACCESS LOGGING BUCKET
+# ============================================================
 
 resource "aws_s3_bucket" "access_logs" {
   bucket = "enterprise-devsecops-access-logs"
 
-  tags = {
-    Name        = "Enterprise Access Logs"
-    Environment = "dev"
-  }
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Access Logs"
+    }
+  )
 }
 
 resource "aws_s3_bucket_public_access_block" "access_logs" {
@@ -198,6 +246,14 @@ resource "aws_s3_bucket_public_access_block" "access_logs" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
@@ -210,30 +266,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
     }
 
     bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_logging" "enterprise_data" {
-  bucket = aws_s3_bucket.enterprise_data.id
-
-  target_bucket = aws_s3_bucket.access_logs.id
-  target_prefix = "enterprise-data/"
-}
-
-resource "aws_s3_bucket_logging" "enterprise_replica" {
-  provider = aws.replica
-
-  bucket = aws_s3_bucket.enterprise_replica.id
-
-  target_bucket = aws_s3_bucket.access_logs.id
-  target_prefix = "enterprise-replica/"
-}
-
-resource "aws_s3_bucket_versioning" "access_logs" {
-  bucket = aws_s3_bucket.access_logs.id
-
-  versioning_configuration {
-    status = "Enabled"
   }
 }
 
@@ -264,9 +296,27 @@ resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
   ]
 }
 
-# --------------------------------------------------
-# IAM - S3 Replication
-# --------------------------------------------------
+# ============================================================
+# S3 SERVER ACCESS LOGGING
+# ============================================================
+
+resource "aws_s3_bucket_logging" "enterprise_data" {
+  bucket = aws_s3_bucket.enterprise_data.id
+
+  target_bucket = aws_s3_bucket.access_logs.id
+  target_prefix = "enterprise-data/"
+}
+
+# NOTE:
+# Cross-region S3 server access logging from the replica bucket
+# to the primary-region access log bucket is intentionally omitted.
+#
+# The replica bucket remains protected with encryption, versioning,
+# public-access blocking, and lifecycle controls.
+
+# ============================================================
+# IAM - S3 REPLICATION
+# ============================================================
 
 resource "aws_iam_role" "s3_replication" {
   name = "enterprise-devsecops-s3-replication-role"
@@ -286,6 +336,13 @@ resource "aws_iam_role" "s3_replication" {
       }
     ]
   })
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "S3 Replication Role"
+    }
+  )
 }
 
 resource "aws_iam_role_policy" "s3_replication" {
@@ -306,6 +363,7 @@ resource "aws_iam_role_policy" "s3_replication" {
 
         Resource = aws_s3_bucket.enterprise_data.arn
       },
+
       {
         Effect = "Allow"
 
@@ -317,6 +375,7 @@ resource "aws_iam_role_policy" "s3_replication" {
 
         Resource = "${aws_s3_bucket.enterprise_data.arn}/*"
       },
+
       {
         Effect = "Allow"
 
@@ -353,13 +412,20 @@ resource "aws_s3_bucket_replication_configuration" "enterprise_data" {
   }
 }
 
-# --------------------------------------------------
-# S3 Event Notification
-# --------------------------------------------------
+# ============================================================
+# S3 EVENT NOTIFICATION
+# ============================================================
 
 resource "aws_sqs_queue" "enterprise_events" {
   name              = "enterprise-devsecops-events"
   kms_master_key_id = aws_kms_key.enterprise.arn
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise S3 Events Queue"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "s3_sqs_policy" {
@@ -400,6 +466,7 @@ resource "aws_s3_bucket_notification" "enterprise_data" {
 
   queue {
     queue_arn = aws_sqs_queue.enterprise_events.arn
+
     events = [
       "s3:ObjectCreated:*"
     ]
@@ -410,34 +477,51 @@ resource "aws_s3_bucket_notification" "enterprise_data" {
   ]
 }
 
-# --------------------------------------------------
-# Security Group
-# --------------------------------------------------
+# ============================================================
+# SECURITY GROUP
+# ============================================================
 
 resource "aws_security_group" "application" {
   name        = "enterprise-application-sg"
-  description = "Application security group"
+  description = "Enterprise application security group"
 
   vpc_id = var.vpc_id
 
   ingress {
     description = "Allow HTTPS from trusted network"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/8"]
+
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      "10.0.0.0/8"
+    ]
   }
 
   egress {
     description = "Allow outbound HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
   }
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Application Security Group"
+    }
+  )
 }
 
-# Create EC2 IAM Roles
+# ============================================================
+# IAM - APPLICATION EC2 ROLE
+# ============================================================
 
 resource "aws_iam_role" "application" {
   name = "enterprise-devsecops-application-role"
@@ -457,17 +541,27 @@ resource "aws_iam_role" "application" {
       }
     ]
   })
+
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Application EC2 IAM Role"
+    }
+  )
 }
+
 resource "aws_iam_instance_profile" "application" {
   name = "enterprise-devsecops-application-profile"
   role = aws_iam_role.application.name
 }
 
-# Supporting EC2 resource to attach Security Group
+# ============================================================
+# EC2 APPLICATION INSTANCE
+# ============================================================
 
 resource "aws_instance" "application" {
   ami           = var.application_ami
-  instance_type = "t3.micro"
+  instance_type = var.instance_type
   subnet_id     = var.subnet_id
 
   vpc_security_group_ids = [
@@ -488,15 +582,17 @@ resource "aws_instance" "application" {
     encrypted = true
   }
 
-  tags = {
-    Name        = "Enterprise Application"
-    Environment = "dev"
-  }
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise Application EC2"
+    }
+  )
 }
 
-# --------------------------------------------------
-# RDS PostgreSQL
-# --------------------------------------------------
+# ============================================================
+# RDS PARAMETER GROUP
+# ============================================================
 
 resource "aws_db_parameter_group" "enterprise_postgres" {
   name   = "enterprise-devsecops-postgres"
@@ -516,21 +612,30 @@ resource "aws_db_parameter_group" "enterprise_postgres" {
     name  = "log_disconnections"
     value = "1"
   }
+
   parameter {
     name  = "rds.force_ssl"
     value = "1"
   }
 
-  tags = {
-    Name        = "Enterprise PostgreSQL Parameter Group"
-    Environment = "dev"
-  }
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise PostgreSQL Parameter Group"
+    }
+  )
 }
 
+# ============================================================
+# RDS POSTGRESQL
+# ============================================================
+
 resource "aws_db_instance" "enterprise_database" {
-  identifier        = "enterprise-devsecops-db"
-  engine            = "postgres"
-  instance_class    = "db.t3.micro"
+  identifier = "enterprise-devsecops-db"
+
+  engine         = "postgres"
+  instance_class = "db.t3.micro"
+
   allocated_storage = 20
 
   username = "admin"
@@ -544,14 +649,15 @@ resource "aws_db_instance" "enterprise_database" {
 
   skip_final_snapshot = false
 
+  final_snapshot_identifier = "enterprise-devsecops-final-snapshot"
+
   backup_retention_period = 7
 
   copy_tags_to_snapshot = true
 
   auto_minor_version_upgrade = true
 
-  performance_insights_enabled = true
-
+  performance_insights_enabled    = true
   performance_insights_kms_key_id = aws_kms_key.enterprise.arn
 
   enabled_cloudwatch_logs_exports = [
@@ -564,39 +670,10 @@ resource "aws_db_instance" "enterprise_database" {
 
   monitoring_interval = 60
 
-  tags = {
-    Name        = "Enterprise Database"
-    Environment = "dev"
-  }
-}
-
-# --------------------------------------------------
-# Variables
-# --------------------------------------------------
-
-variable "db_password" {
-  description = "Database administrator password"
-  type        = string
-  sensitive   = true
-}
-
-variable "vpc_id" {
-  description = "VPC ID for the application security group"
-  type        = string
-}
-
-variable "subnet_id" {
-  description = "Subnet ID for the application instance"
-  type        = string
-}
-
-variable "application_ami" {
-  description = "AMI ID for the application EC2 instance"
-  type        = string
-}
-
-variable "postgres_parameter_family" {
-  description = "PostgreSQL RDS parameter group family"
-  type        = string
-  default     = "postgres16"
+  tags = merge(
+    local.mandatory_tags,
+    {
+      Name = "Enterprise PostgreSQL Database"
+    }
+  )
 }

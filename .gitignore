@@ -63,3 +63,13 @@ terraform-backup-*/
 .env
 .env.*
 !.env.example
+
+# terraform.tfvars
+
+# Terraform generated files
+terraform/*.tfplan
+terraform/tfplan
+terraform-policy-test/*.tfplan
+terraform-policy-test/tfplan.json
+terraform-policy-test/tfplan-compliant.json
+terraform-backups/
