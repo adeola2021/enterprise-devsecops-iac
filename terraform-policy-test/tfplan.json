@@ -1,0 +1,41 @@
+{
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_instance.insecure_test",
+          "mode": "managed",
+          "type": "aws_instance",
+          "name": "insecure_test",
+          "values": {
+            "instance_type": "t3.large",
+            "tags": {
+              "Environment": "dev"
+            }
+          }
+        },
+        {
+          "address": "aws_security_group.insecure_test",
+          "mode": "managed",
+          "type": "aws_security_group",
+          "name": "insecure_test",
+          "values": {
+            "tags": {
+              "Environment": "dev"
+            },
+            "ingress": [
+              {
+                "from_port": 22,
+                "to_port": 22,
+                "protocol": "tcp",
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

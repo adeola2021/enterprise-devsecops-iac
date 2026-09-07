@@ -1,0 +1,45 @@
+{
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_instance.compliant_test",
+          "mode": "managed",
+          "type": "aws_instance",
+          "name": "compliant_test",
+          "values": {
+            "instance_type": "t3.medium",
+            "tags": {
+              "Environment": "dev",
+              "Owner": "DevSecOps",
+              "CostCenter": "IT-SEC-001"
+            }
+          }
+        },
+        {
+          "address": "aws_security_group.compliant_test",
+          "mode": "managed",
+          "type": "aws_security_group",
+          "name": "compliant_test",
+          "values": {
+            "tags": {
+              "Environment": "dev",
+              "Owner": "DevSecOps",
+              "CostCenter": "IT-SEC-001"
+            },
+            "ingress": [
+              {
+                "from_port": 22,
+                "to_port": 22,
+                "protocol": "tcp",
+                "cidr_blocks": [
+                  "10.0.0.0/8"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
