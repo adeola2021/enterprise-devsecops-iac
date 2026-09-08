@@ -36,7 +36,7 @@ jobs:
         run: |
           set +e
 
-          terraform plan -detailed-exitcode \
+          terraform plan -input=false -detailed-exitcode \
             -out=tfplan
 
           EXIT_CODE=$?
