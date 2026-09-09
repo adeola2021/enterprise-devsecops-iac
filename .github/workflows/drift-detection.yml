@@ -20,6 +20,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftDetection
+          aws-region: us-east-1
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -43,7 +53,9 @@ jobs:
         run: |
           set +e
 
-          terraform plan -input=false -detailed-exitcode \
+          terraform plan \
+            -input=false \
+            -detailed-exitcode \
             -out=tfplan
 
           EXIT_CODE=$?
