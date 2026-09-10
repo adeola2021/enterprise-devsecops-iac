@@ -31,28 +31,70 @@ jobs:
           aws sts get-caller-identity
 
       - name: Discover AWS resources
+        shell: bash
         run: |
-          echo "=== VPCs ==="
-          aws ec2 describe-vpcs \
-            --region us-east-1 \
-            --query 'Vpcs[].{VPC:VpcId,CIDR:CidrBlock}' \
-            --output table
+          set -e
 
-          echo "=== Subnets ==="
-          aws ec2 describe-subnets \
-            --region us-east-1 \
-            --query 'Subnets[].{Subnet:SubnetId,VPC:VpcId,AZ:AvailabilityZone,CIDR:CidrBlock}' \
-            --output table
+          echo "Discovering default VPC..."
 
-          echo "=== Amazon Linux AMIs ==="
-          aws ec2 describe-images \
+          VPC_ID=$(aws ec2 describe-vpcs \
+            --region us-east-1 \
+            --filters "Name=is-default,Values=true" \
+            --query 'Vpcs[0].VpcId' \
+            --output text)
+
+          if [ "$VPC_ID" = "None" ] || [ -z "$VPC_ID" ]; then
+            echo "❌ No default VPC found."
+            exit 1
+          fi
+
+          echo "VPC_ID=$VPC_ID"
+
+          echo "Discovering subnet..."
+
+          SUBNET_ID=$(aws ec2 describe-subnets \
+            --region us-east-1 \
+            --filters \
+              "Name=vpc-id,Values=$VPC_ID" \
+              "Name=state,Values=available" \
+            --query 'Subnets | sort_by(@, &AvailabilityZone)[0].SubnetId' \
+            --output text)
+
+          if [ "$SUBNET_ID" = "None" ] || [ -z "$SUBNET_ID" ]; then
+            echo "❌ No available subnet found in VPC $VPC_ID."
+            exit 1
+          fi
+
+          echo "SUBNET_ID=$SUBNET_ID"
+
+          echo "Discovering latest Amazon Linux 2023 AMI..."
+
+          AMI_ID=$(aws ec2 describe-images \
             --region us-east-1 \
             --owners amazon \
             --filters \
               "Name=name,Values=al2023-ami-*-x86_64" \
               "Name=state,Values=available" \
-            --query 'Images | sort_by(@, &CreationDate)[-5:].{AMI:ImageId,Name:Name,Date:CreationDate}' \
-            --output table
+            --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' \
+            --output text)
+
+          if [ "$AMI_ID" = "None" ] || [ -z "$AMI_ID" ]; then
+            echo "❌ No suitable Amazon Linux 2023 AMI found."
+            exit 1
+          fi
+
+          echo "AMI_ID=$AMI_ID"
+
+          echo "TF_VAR_vpc_id=$VPC_ID" >> "$GITHUB_ENV"
+          echo "TF_VAR_subnet_id=$SUBNET_ID" >> "$GITHUB_ENV"
+          echo "TF_VAR_application_ami=$AMI_ID" >> "$GITHUB_ENV"
+
+      - name: Show selected Terraform inputs
+        run: |
+          echo "VPC: $TF_VAR_vpc_id"
+          echo "Subnet: $TF_VAR_subnet_id"
+          echo "AMI: $TF_VAR_application_ami"
+          echo "Database password: configured as GitHub Secret"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -69,9 +111,6 @@ jobs:
         working-directory: terraform
         shell: bash
         env:
-          TF_VAR_vpc_id: ${{ vars.TF_VAR_VPC_ID }}
-          TF_VAR_subnet_id: ${{ vars.TF_VAR_SUBNET_ID }}
-          TF_VAR_application_ami: ${{ vars.TF_VAR_APPLICATION_AMI }}
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
         run: |
           set +e
