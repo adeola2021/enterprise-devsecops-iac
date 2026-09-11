@@ -194,7 +194,9 @@ jobs:
           echo "✅ All Terraform variables are available."
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
 
       - name: Terraform Init
         working-directory: terraform
