@@ -97,6 +97,10 @@ jobs:
         run: |
           set -e
 
+          echo "=========================================="
+          echo "AWS RESOURCE DISCOVERY"
+          echo "=========================================="
+
           echo "Discovering default VPC..."
 
           VPC_ID=$(aws ec2 describe-vpcs \
@@ -147,11 +151,24 @@ jobs:
 
           echo "AMI_ID=$AMI_ID"
 
+          # Persist values for subsequent GitHub Actions steps
+          echo "DISCOVERED_VPC_ID=$VPC_ID" >> "$GITHUB_ENV"
+          echo "DISCOVERED_SUBNET_ID=$SUBNET_ID" >> "$GITHUB_ENV"
+          echo "DISCOVERED_AMI_ID=$AMI_ID" >> "$GITHUB_ENV"
+
+          # Also expose them as step outputs
           echo "vpc_id=$VPC_ID" >> "$GITHUB_OUTPUT"
           echo "subnet_id=$SUBNET_ID" >> "$GITHUB_OUTPUT"
           echo "application_ami=$AMI_ID" >> "$GITHUB_OUTPUT"
 
-          echo "✅ AWS resource discovery completed."
+          echo
+          echo "=========================================="
+          echo "DISCOVERY COMPLETE"
+          echo "=========================================="
+          echo "DISCOVERED_VPC_ID=$VPC_ID"
+          echo "DISCOVERED_SUBNET_ID=$SUBNET_ID"
+          echo "DISCOVERED_AMI_ID=$AMI_ID"
+          echo "=========================================="
 
       - name: Verify discovered Terraform variables
         run: |
@@ -196,9 +213,6 @@ jobs:
         shell: bash
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
-          DISCOVERED_VPC_ID: ${{ steps.discovery.outputs.vpc_id }}
-          DISCOVERED_SUBNET_ID: ${{ steps.discovery.outputs.subnet_id }}
-          DISCOVERED_AMI_ID: ${{ steps.discovery.outputs.application_ami }}
         run: |
           set +e
 
