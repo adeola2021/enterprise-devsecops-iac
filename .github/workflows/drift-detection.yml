@@ -146,9 +146,14 @@ jobs:
 
           echo "AMI_ID=$AMI_ID"
 
-          echo "TF_VAR_vpc_id=$VPC_ID" >> "$GITHUB_ENV"
-          echo "TF_VAR_subnet_id=$SUBNET_ID" >> "$GITHUB_ENV"
-          echo "TF_VAR_application_ami=$AMI_ID" >> "$GITHUB_ENV"
+          cat > terraform/terraform.auto.tfvars <<EOF
+          vpc_id         = "$VPC_ID"
+          subnet_id      = "$SUBNET_ID"
+          application_ami = "$AMI_ID"
+          EOF
+
+          echo "✅ Terraform variables file created."
+          echo "VPC, subnet and AMI values successfully prepared for Terraform."
 
       - name: Verify Terraform variables
         shell: bash
@@ -195,6 +200,8 @@ jobs:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
         run: |
           set +e
+
+          echo "Checking Terraform variables..."
 
           terraform plan \
             -input=false \
