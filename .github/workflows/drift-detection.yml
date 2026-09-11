@@ -92,6 +92,7 @@ jobs:
           aws sts get-caller-identity
 
       - name: Discover AWS resources
+        id: discovery
         shell: bash
         run: |
           set -e
@@ -146,37 +147,34 @@ jobs:
 
           echo "AMI_ID=$AMI_ID"
 
-          cat > terraform/terraform.auto.tfvars <<EOF
-          vpc_id         = "$VPC_ID"
-          subnet_id      = "$SUBNET_ID"
-          application_ami = "$AMI_ID"
-          EOF
+          echo "vpc_id=$VPC_ID" >> "$GITHUB_OUTPUT"
+          echo "subnet_id=$SUBNET_ID" >> "$GITHUB_OUTPUT"
+          echo "application_ami=$AMI_ID" >> "$GITHUB_OUTPUT"
 
-          echo "✅ Terraform variables file created."
-          echo "VPC, subnet and AMI values successfully prepared for Terraform."
+          echo "✅ AWS resource discovery completed."
 
-      - name: Verify Terraform variables
-        shell: bash
+      - name: Verify discovered Terraform variables
         run: |
-          echo "Checking Terraform environment variables..."
+          echo "VPC ID: ${{ steps.discovery.outputs.vpc_id }}"
+          echo "Subnet ID: ${{ steps.discovery.outputs.subnet_id }}"
+          echo "Application AMI: ${{ steps.discovery.outputs.application_ami }}"
 
-          if [ -n "$TF_VAR_vpc_id" ]; then
-            echo "✅ TF_VAR_vpc_id is set"
-          else
-            echo "❌ TF_VAR_vpc_id is NOT set"
+          if [ -z "${{ steps.discovery.outputs.vpc_id }}" ]; then
+            echo "❌ VPC ID is missing."
+            exit 1
           fi
 
-          if [ -n "$TF_VAR_subnet_id" ]; then
-            echo "✅ TF_VAR_subnet_id is set"
-          else
-            echo "❌ TF_VAR_subnet_id is NOT set"
+          if [ -z "${{ steps.discovery.outputs.subnet_id }}" ]; then
+            echo "❌ Subnet ID is missing."
+            exit 1
           fi
 
-          if [ -n "$TF_VAR_application_ami" ]; then
-            echo "✅ TF_VAR_application_ami is set"
-          else
-            echo "❌ TF_VAR_application_ami is NOT set"
+          if [ -z "${{ steps.discovery.outputs.application_ami }}" ]; then
+            echo "❌ Application AMI is missing."
+            exit 1
           fi
+
+          echo "✅ All Terraform variables are available."
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -206,9 +204,9 @@ jobs:
           terraform plan \
             -input=false \
             -detailed-exitcode \
-            -var="vpc_id=$TF_VAR_vpc_id" \
-            -var="subnet_id=$TF_VAR_subnet_id" \
-            -var="application_ami=$TF_VAR_application_ami" \
+            -var="vpc_id=${{ steps.discovery.outputs.vpc_id }}" \
+            -var="subnet_id=${{ steps.discovery.outputs.subnet_id }}" \
+            -var="application_ami=${{ steps.discovery.outputs.application_ami }}" \
             -out=tfplan
 
           EXIT_CODE=$?
