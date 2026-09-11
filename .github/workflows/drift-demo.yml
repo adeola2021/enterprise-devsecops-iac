@@ -42,6 +42,13 @@ jobs:
         working-directory: drift-demo
         run: terraform validate
 
+      - name: Establish Drift Demo Baseline
+        working-directory: drift-demo
+        run: |
+          terraform apply \
+            -input=false \
+            -auto-approve
+
       - name: Terraform Drift Check
         working-directory: drift-demo
         shell: bash
