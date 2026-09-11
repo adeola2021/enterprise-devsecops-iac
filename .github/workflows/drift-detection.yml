@@ -196,21 +196,54 @@ jobs:
         shell: bash
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          DISCOVERED_VPC_ID: ${{ steps.discovery.outputs.vpc_id }}
+          DISCOVERED_SUBNET_ID: ${{ steps.discovery.outputs.subnet_id }}
+          DISCOVERED_AMI_ID: ${{ steps.discovery.outputs.application_ami }}
         run: |
           set +e
 
-          echo "Running Terraform drift check..."
+          echo "=========================================="
+          echo "Terraform Drift Detection"
+          echo "=========================================="
+
+          echo "VPC ID: $DISCOVERED_VPC_ID"
+          echo "Subnet ID: $DISCOVERED_SUBNET_ID"
+          echo "AMI ID: $DISCOVERED_AMI_ID"
+
+          echo
+          echo "Checking required values..."
+
+          if [ -z "$DISCOVERED_VPC_ID" ]; then
+            echo "❌ VPC ID is empty"
+            exit 1
+          fi
+
+          if [ -z "$DISCOVERED_SUBNET_ID" ]; then
+            echo "❌ Subnet ID is empty"
+            exit 1
+          fi
+
+          if [ -z "$DISCOVERED_AMI_ID" ]; then
+            echo "❌ AMI ID is empty"
+            exit 1
+          fi
+
+          echo "✅ All AWS resource values are available."
+
+          echo
+          echo "Running Terraform plan..."
 
           terraform plan \
             -input=false \
             -detailed-exitcode \
-            -var="vpc_id=${{ steps.discovery.outputs.vpc_id }}" \
-            -var="subnet_id=${{ steps.discovery.outputs.subnet_id }}" \
-            -var="application_ami=${{ steps.discovery.outputs.application_ami }}" \
+            -var="vpc_id=$DISCOVERED_VPC_ID" \
+            -var="subnet_id=$DISCOVERED_SUBNET_ID" \
+            -var="application_ami=$DISCOVERED_AMI_ID" \
             -out=tfplan
 
           EXIT_CODE=$?
 
+          echo
           echo "Terraform plan exit code: $EXIT_CODE"
 
           if [ "$EXIT_CODE" -eq 0 ]; then
