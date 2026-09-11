@@ -148,7 +148,7 @@ jobs:
 
           echo "TF_VAR_vpc_id=$VPC_ID" >> "$GITHUB_ENV"
           echo "TF_VAR_subnet_id=$SUBNET_ID" >> "$GITHUB_ENV"
-          echo "TF_VAR_application_ami=$AMI_ID"
+          echo "TF_VAR_application_ami=$AMI_ID" >> "$GITHUB_ENV"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
