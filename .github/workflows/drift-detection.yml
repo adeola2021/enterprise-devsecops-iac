@@ -201,11 +201,14 @@ jobs:
         run: |
           set +e
 
-          echo "Checking Terraform variables..."
+          echo "Running Terraform drift check..."
 
           terraform plan \
             -input=false \
             -detailed-exitcode \
+            -var="vpc_id=$TF_VAR_vpc_id" \
+            -var="subnet_id=$TF_VAR_subnet_id" \
+            -var="application_ami=$TF_VAR_application_ami" \
             -out=tfplan
 
           EXIT_CODE=$?
