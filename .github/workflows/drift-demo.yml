@@ -1,0 +1,71 @@
+name: Terraform Drift Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  drift-demo:
+    name: Drift Demo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftDetection
+          aws-region: us-east-1
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: drift-demo
+        run: |
+          terraform init \
+            -backend-config="bucket=enterprise-devsecops-tfstate-011122914928" \
+            -backend-config="key=drift-demo/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform Validate
+        working-directory: drift-demo
+        run: terraform validate
+
+      - name: Terraform Drift Check
+        working-directory: drift-demo
+        shell: bash
+        run: |
+          set +e
+
+          terraform plan \
+            -input=false \
+            -detailed-exitcode \
+            -out=tfplan
+
+          EXIT_CODE=$?
+
+          echo "Terraform plan exit code: $EXIT_CODE"
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "✅ No infrastructure drift detected."
+            exit 0
+
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "⚠️ Infrastructure changes or drift detected."
+            exit 2
+
+          else
+            echo "❌ Terraform plan failed."
+            exit 1
+          fi
