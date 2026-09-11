@@ -150,6 +150,29 @@ jobs:
           echo "TF_VAR_subnet_id=$SUBNET_ID" >> "$GITHUB_ENV"
           echo "TF_VAR_application_ami=$AMI_ID" >> "$GITHUB_ENV"
 
+      - name: Verify Terraform variables
+        shell: bash
+        run: |
+          echo "Checking Terraform environment variables..."
+
+          if [ -n "$TF_VAR_vpc_id" ]; then
+            echo "✅ TF_VAR_vpc_id is set"
+          else
+            echo "❌ TF_VAR_vpc_id is NOT set"
+          fi
+
+          if [ -n "$TF_VAR_subnet_id" ]; then
+            echo "✅ TF_VAR_subnet_id is set"
+          else
+            echo "❌ TF_VAR_subnet_id is NOT set"
+          fi
+
+          if [ -n "$TF_VAR_application_ami" ]; then
+            echo "✅ TF_VAR_application_ami is set"
+          else
+            echo "❌ TF_VAR_application_ami is NOT set"
+          fi
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
