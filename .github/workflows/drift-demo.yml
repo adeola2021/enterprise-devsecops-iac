@@ -49,7 +49,6 @@ jobs:
             -input=false \
             -auto-approve
 
-
       - name: Verify live SSM value
         run: |
           aws ssm get-parameter \
