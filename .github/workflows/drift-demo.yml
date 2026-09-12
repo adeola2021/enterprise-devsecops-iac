@@ -49,6 +49,15 @@ jobs:
             -input=false \
             -auto-approve
 
+
+      - name: Verify live SSM value
+        run: |
+          aws ssm get-parameter \
+            --region us-east-1 \
+            --name "/enterprise-devsecops/drift-demo" \
+            --query 'Parameter.[Name,Value,Version]' \
+            --output table
+
       - name: Terraform Drift Check
         working-directory: drift-demo
         shell: bash
