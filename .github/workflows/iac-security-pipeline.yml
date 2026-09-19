@@ -100,7 +100,7 @@ jobs:
           echo "=========================================="
 
           conftest test \
-            terraform-policy-test/tfplan-phase2-insecure.json \
+            terraform-policy-test/tfplan-phase2-compliant.json \
             --policy policy/
 
       # --------------------------------------------------
