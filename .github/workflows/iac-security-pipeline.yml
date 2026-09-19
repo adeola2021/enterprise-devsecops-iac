@@ -86,7 +86,21 @@ jobs:
       # --------------------------------------------------
       - name: OPA Policy Enforcement
         run: |
-          conftest test terraform-policy-test/tfplan-compliant.json \
+          echo "=========================================="
+          echo " Phase 1 OPA Policy Validation"
+          echo "=========================================="
+
+          conftest test \
+            terraform-policy-test/tfplan-compliant.json \
+            --policy policy/
+
+          echo
+          echo "=========================================="
+          echo " Phase 2 Advanced OPA Policy Validation"
+          echo "=========================================="
+
+          conftest test \
+            terraform-policy-test/tfplan-phase2-compliant.json \
             --policy policy/
 
       # --------------------------------------------------
@@ -102,5 +116,6 @@ jobs:
           echo "Terraform validation: PASSED"
           echo "Gitleaks: PASSED"
           echo "Checkov: PASSED"
-          echo "OPA/Conftest: PASSED"
+          echo "OPA/Conftest Phase 1: PASSED"
+          echo "OPA/Conftest Phase 2: PASSED"
           echo "=========================================="
