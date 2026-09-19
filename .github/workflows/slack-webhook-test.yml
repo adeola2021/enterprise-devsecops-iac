@@ -1,0 +1,30 @@
+name: Slack Webhook Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slack-test:
+    name: Test Slack Alert
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send test alert to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAYLOAD=$(cat <<EOFJSON
+          {
+            "text": "✅ *DevSecOps Webhook Test Successful*\n\n*Repository:* ${{ github.repository }}\n*Workflow:* ${{ github.workflow }}\n*Branch:* ${{ github.ref_name }}\n*Status:* Slack webhook connectivity verified.\n\nTerraform drift alerts can now be delivered to this channel."
+          }
+          EOFJSON
+          )
+
+          curl --fail-with-body \
+            -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
