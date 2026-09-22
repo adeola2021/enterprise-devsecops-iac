@@ -1,0 +1,84 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_ebs_volume.compliant",
+          "mode": "managed",
+          "type": "aws_ebs_volume",
+          "name": "compliant",
+          "values": {
+            "encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:011122914928:key/11111111-2222-3333-4444-555555555555"
+          }
+        },
+
+        {
+          "address": "aws_s3_bucket.compliant",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "compliant",
+          "values": {
+            "bucket": "phase2-compliant-test",
+            "tags": {
+              "Environment": "dev",
+              "Owner": "DevSecOps",
+              "CostCenter": "IT-SEC-001"
+            }
+          }
+        },
+
+        {
+          "address": "aws_s3_bucket_server_side_encryption_configuration.compliant",
+          "mode": "managed",
+          "type": "aws_s3_bucket_server_side_encryption_configuration",
+          "name": "compliant",
+          "values": {
+            "bucket": "phase2-compliant-test",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "sse_algorithm": "aws:kms",
+                    "kms_master_key_id": "arn:aws:kms:us-east-1:011122914928:key/11111111-2222-3333-4444-555555555555"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+
+        {
+          "address": "aws_s3_bucket_public_access_block.compliant",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "compliant",
+          "values": {
+            "bucket": "phase2-compliant-test",
+            "block_public_acls": true,
+            "ignore_public_acls": true,
+            "block_public_policy": true,
+            "restrict_public_buckets": true
+          }
+        }
+      ]
+    }
+  },
+
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "name": "aws",
+        "full_name": "registry.terraform.io/hashicorp/aws",
+        "expressions": {
+          "region": {
+            "constant_value": "us-east-1"
+          }
+        }
+      }
+    }
+  }
+}

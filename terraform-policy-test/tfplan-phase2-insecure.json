@@ -1,0 +1,50 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_ebs_volume.insecure",
+          "mode": "managed",
+          "type": "aws_ebs_volume",
+          "name": "insecure",
+          "values": {
+            "encrypted": false,
+            "kms_key_id": null
+          }
+        },
+
+        {
+          "address": "aws_s3_bucket.insecure",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "insecure",
+          "values": {
+            "bucket": "phase2-insecure-test",
+            "tags": {
+              "Environment": "dev",
+              "Owner": "DevSecOps",
+              "CostCenter": "IT-SEC-001"
+            }
+          }
+        }
+      ]
+    }
+  },
+
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "name": "aws",
+        "full_name": "registry.terraform.io/hashicorp/aws",
+        "expressions": {
+          "region": {
+            "constant_value": "ap-southeast-1"
+          }
+        }
+      }
+    }
+  }
+}

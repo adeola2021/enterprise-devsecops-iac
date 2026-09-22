@@ -53,6 +53,7 @@ jobs:
             --output table
 
       - name: Terraform Drift Check
+        id: drift
         working-directory: drift-demo
         shell: bash
         run: |
@@ -61,21 +62,91 @@ jobs:
           terraform plan \
             -input=false \
             -detailed-exitcode \
-            -out=tfplan
+            -no-color \
+            -out=tfplan > drift-output.txt 2>&1
 
           EXIT_CODE=$?
 
           echo "Terraform plan exit code: $EXIT_CODE"
+          cat drift-output.txt
+
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
 
           if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "status=NO_DRIFT" >> "$GITHUB_OUTPUT"
             echo "✅ No infrastructure drift detected."
+
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "status=DRIFT_DETECTED" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Infrastructure changes or drift detected."
+
+          else
+            echo "status=PLAN_ERROR" >> "$GITHUB_OUTPUT"
+            echo "❌ Terraform plan failed."
+          fi
+
+          exit 0
+
+      - name: Prepare Drift Summary
+        if: steps.drift.outputs.exit_code == '2'
+        id: summary
+        working-directory: drift-demo
+        shell: bash
+        run: |
+          {
+            echo "summary<<EOF"
+            tail -n 25 drift-output.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack Drift Alert
+        if: steps.drift.outputs.exit_code == '2'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DRIFT_SUMMARY: ${{ steps.summary.outputs.summary }}
+        shell: bash
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg repository "${{ github.repository }}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg summary "$DRIFT_SUMMARY" \
+            '{
+              text:
+                ("🚨 *TERRAFORM DRIFT DETECTED*\n\n" +
+                 "*Repository:* " + $repository + "\n" +
+                 "*Workflow:* " + $workflow + "\n" +
+                 "*Branch:* " + $branch + "\n" +
+                 "*Terraform Exit Code:* 2\n" +
+                 "*Status:* DRIFT DETECTED\n" +
+                 "*Triggered by:* " + $actor + "\n" +
+                 "*Run ID:* " + $run_id + "\n\n" +
+                 "*Drift Summary:*\n```" + $summary + "```")
+            }')
+
+          curl --fail-with-body \
+            -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
+
+      - name: Enforce Drift Result
+        if: always()
+        shell: bash
+        run: |
+          EXIT_CODE="${{ steps.drift.outputs.exit_code }}"
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "✅ Infrastructure matches Terraform configuration."
             exit 0
 
           elif [ "$EXIT_CODE" -eq 2 ]; then
-            echo "⚠️ Infrastructure changes or drift detected."
+            echo "❌ Drift detected. Slack alert dispatched."
             exit 2
 
           else
-            echo "❌ Terraform plan failed."
+            echo "❌ Terraform plan execution failed."
             exit 1
           fi

@@ -73,3 +73,9 @@ terraform-policy-test/*.tfplan
 terraform-policy-test/tfplan.json
 terraform-policy-test/tfplan-compliant.json
 terraform-backups/
+
+# Ignore Terraform working directories in all modules
+**/.terraform/
+
+# Local Phase 1 backup files
+*.phase1-backup
