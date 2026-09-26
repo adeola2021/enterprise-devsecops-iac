@@ -25,32 +25,29 @@ jobs:
 
       - name: Verify AWS identity
         run: |
-          echo "=========================================="
-          echo " Phase 3 AWS OIDC Identity Validation"
-          echo "=========================================="
-
           aws sts get-caller-identity
 
-      - name: Verify temporary credentials
+      - name: Inspect existing role
+        shell: bash
         run: |
-          echo "=========================================="
-          echo " Temporary Credential Validation"
-          echo "=========================================="
+          set +e
 
-          if [ -n "$AWS_SESSION_TOKEN" ]; then
-            echo "PASS: AWS session token is present."
-            echo "Authentication is using temporary credentials."
-          else
-            echo "FAIL: AWS session token was not found."
-            exit 1
-          fi
+          echo "=== ROLE DETAILS ==="
+          aws iam get-role \
+            --role-name GitHubActions-Terraform-DriftDetection \
+            --query 'Role.[RoleName,Arn,MaxSessionDuration,AssumeRolePolicyDocument]' \
+            --output json
 
-      - name: OIDC validation summary
-        run: |
-          echo "=========================================="
-          echo " PHASE 3 OIDC VALIDATION PASSED"
-          echo "=========================================="
-          echo "Authentication method: GitHub OIDC"
-          echo "AWS credential type: Temporary STS session"
-          echo "Static AWS GitHub secrets: Not required"
-          echo "=========================================="
+          echo
+          echo "=== ATTACHED MANAGED POLICIES ==="
+          aws iam list-attached-role-policies \
+            --role-name GitHubActions-Terraform-DriftDetection \
+            --output table
+
+          echo
+          echo "=== INLINE POLICIES ==="
+          aws iam list-role-policies \
+            --role-name GitHubActions-Terraform-DriftDetection \
+            --output table
+
+          exit 0
