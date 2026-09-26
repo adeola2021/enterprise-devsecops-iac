@@ -1,0 +1,56 @@
+name: Phase 3 OIDC Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  oidc-validation:
+    name: AWS OIDC Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftDetection
+          aws-region: us-east-1
+          role-session-name: Phase3OIDCValidation
+
+      - name: Verify AWS identity
+        run: |
+          echo "=========================================="
+          echo " Phase 3 AWS OIDC Identity Validation"
+          echo "=========================================="
+
+          aws sts get-caller-identity
+
+      - name: Verify temporary credentials
+        run: |
+          echo "=========================================="
+          echo " Temporary Credential Validation"
+          echo "=========================================="
+
+          if [ -n "$AWS_SESSION_TOKEN" ]; then
+            echo "PASS: AWS session token is present."
+            echo "Authentication is using temporary credentials."
+          else
+            echo "FAIL: AWS session token was not found."
+            exit 1
+          fi
+
+      - name: OIDC validation summary
+        run: |
+          echo "=========================================="
+          echo " PHASE 3 OIDC VALIDATION PASSED"
+          echo "=========================================="
+          echo "Authentication method: GitHub OIDC"
+          echo "AWS credential type: Temporary STS session"
+          echo "Static AWS GitHub secrets: Not required"
+          echo "=========================================="
