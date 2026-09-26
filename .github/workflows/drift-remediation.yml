@@ -1,0 +1,336 @@
+name: Phase 3 Event-Driven Drift Remediation
+
+on:
+  workflow_dispatch:
+
+  repository_dispatch:
+    types:
+      - infrastructure-drift
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: phase3-drift-remediation
+  cancel-in-progress: false
+
+jobs:
+  drift-remediation:
+    name: Detect and Remediate Approved Drift
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------------------------------------
+      # 1. Checkout
+      # --------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # 2. Keyless AWS authentication
+      # --------------------------------------------------
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftDetection
+          aws-region: us-east-1
+          role-session-name: Phase3DriftRemediation
+
+      - name: Verify AWS identity
+        run: |
+          echo "=== AWS OIDC IDENTITY ==="
+          aws sts get-caller-identity
+
+      # --------------------------------------------------
+      # 3. Terraform
+      # --------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: drift-demo
+        run: |
+          terraform init \
+            -backend-config="bucket=enterprise-devsecops-tfstate-011122914928" \
+            -backend-config="key=drift-demo/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform Validate
+        working-directory: drift-demo
+        run: terraform validate
+
+      # --------------------------------------------------
+      # 4. Detect drift
+      # --------------------------------------------------
+      - name: Terraform Drift Check
+        id: drift
+        working-directory: drift-demo
+        shell: bash
+        run: |
+          set +e
+
+          terraform plan \
+            -input=false \
+            -detailed-exitcode \
+            -no-color \
+            -out=tfplan > drift-output.txt 2>&1
+
+          EXIT_CODE=$?
+
+          echo "Terraform plan exit code: $EXIT_CODE"
+          cat drift-output.txt
+
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "status=NO_DRIFT" >> "$GITHUB_OUTPUT"
+            echo "✅ No infrastructure drift detected."
+
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "status=DRIFT_DETECTED" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Infrastructure drift detected."
+
+          else
+            echo "status=PLAN_ERROR" >> "$GITHUB_OUTPUT"
+            echo "❌ Terraform plan failed."
+          fi
+
+          exit 0
+
+      # --------------------------------------------------
+      # 5. Convert plan to JSON
+      # --------------------------------------------------
+      - name: Export Terraform Plan JSON
+        if: steps.drift.outputs.exit_code == '2'
+        working-directory: drift-demo
+        run: |
+          terraform show -json tfplan > tfplan.json
+
+          echo "Terraform plan exported to JSON."
+
+      # --------------------------------------------------
+      # 6. Safety gate
+      # --------------------------------------------------
+      - name: Classify Drift for Auto-Remediation
+        if: steps.drift.outputs.exit_code == '2'
+        id: gate
+        working-directory: drift-demo
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo " Phase 3 Auto-Remediation Safety Gate"
+          echo "=========================================="
+
+          jq -r '
+            .resource_changes[]? |
+            "\(.address) | \(.type) | \(.change.actions | join(","))"
+          ' tfplan.json
+
+          TOTAL_CHANGES=$(jq '
+            [.resource_changes[]?
+              | select(.change.actions != ["no-op"])]
+            | length
+          ' tfplan.json)
+
+          APPROVED_CHANGES=$(jq '
+            [.resource_changes[]?
+              | select(.change.actions != ["no-op"])
+              | select(
+                  .address == "aws_ssm_parameter.drift_demo"
+                  and .type == "aws_ssm_parameter"
+                  and .change.actions == ["update"]
+                )]
+            | length
+          ' tfplan.json)
+
+          DESTRUCTIVE_CHANGES=$(jq '
+            [.resource_changes[]?
+              | select(
+                  (.change.actions | index("delete")) != null
+                  or
+                  (.change.actions | index("create")) != null
+                )]
+            | length
+          ' tfplan.json)
+
+          echo "Total changed resources: $TOTAL_CHANGES"
+          echo "Approved changed resources: $APPROVED_CHANGES"
+          echo "Destructive/replacement changes: $DESTRUCTIVE_CHANGES"
+
+          if [ "$TOTAL_CHANGES" -eq 1 ] && \
+             [ "$APPROVED_CHANGES" -eq 1 ] && \
+             [ "$DESTRUCTIVE_CHANGES" -eq 0 ]; then
+
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+
+            echo "=========================================="
+            echo " AUTO-REMEDIATION APPROVED"
+            echo "=========================================="
+            echo "Resource: aws_ssm_parameter.drift_demo"
+            echo "Action: update"
+            echo "Risk classification: pre-approved low risk"
+
+          else
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+
+            echo "=========================================="
+            echo " AUTO-REMEDIATION BLOCKED"
+            echo "=========================================="
+            echo "Terraform plan contains changes outside"
+            echo "the approved Phase 3 remediation allowlist."
+          fi
+
+      # --------------------------------------------------
+      # 7. Gated remediation
+      # --------------------------------------------------
+      - name: Auto-Remediate Approved Drift
+        if: |
+          steps.drift.outputs.exit_code == '2' &&
+          steps.gate.outputs.approved == 'true'
+        working-directory: drift-demo
+        run: |
+          echo "Applying pre-approved Terraform plan..."
+
+          terraform apply \
+            -input=false \
+            -auto-approve \
+            tfplan
+
+          echo "✅ Approved remediation apply completed."
+
+      # --------------------------------------------------
+      # 8. Verify remediation
+      # --------------------------------------------------
+      - name: Verify Remediation
+        if: |
+          steps.drift.outputs.exit_code == '2' &&
+          steps.gate.outputs.approved == 'true'
+        id: verify
+        working-directory: drift-demo
+        shell: bash
+        run: |
+          set +e
+
+          terraform plan \
+            -input=false \
+            -detailed-exitcode \
+            -no-color > verification-output.txt 2>&1
+
+          VERIFY_CODE=$?
+
+          cat verification-output.txt
+
+          echo "verify_code=$VERIFY_CODE" >> "$GITHUB_OUTPUT"
+
+          if [ "$VERIFY_CODE" -eq 0 ]; then
+            echo "remediated=true" >> "$GITHUB_OUTPUT"
+
+            echo "=========================================="
+            echo " DRIFT REMEDIATED AUTOMATICALLY"
+            echo "=========================================="
+            echo "Verification exit code: 0"
+            exit 0
+          fi
+
+          echo "remediated=false" >> "$GITHUB_OUTPUT"
+
+          echo "❌ Post-remediation verification failed."
+          exit 1
+
+      # --------------------------------------------------
+      # 9. Successful remediation Slack notification
+      # --------------------------------------------------
+      - name: Send Successful Remediation Slack Alert
+        if: steps.verify.outputs.remediated == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg repository "${{ github.repository }}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg resource "aws_ssm_parameter.drift_demo" \
+            '{
+              text:
+                ("✅ *DRIFT REMEDIATED AUTOMATICALLY*\n\n" +
+                 "*Repository:* " + $repository + "\n" +
+                 "*Workflow:* " + $workflow + "\n" +
+                 "*Resource:* " + $resource + "\n" +
+                 "*Terraform verification exit code:* 0\n" +
+                 "*Status:* INFRASTRUCTURE RESTORED\n" +
+                 "*Run ID:* " + $run_id)
+            }')
+
+          curl --fail-with-body \
+            -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
+
+      # --------------------------------------------------
+      # 10. Blocked drift Slack notification
+      # --------------------------------------------------
+      - name: Send Blocked Drift Slack Alert
+        if: |
+          steps.drift.outputs.exit_code == '2' &&
+          steps.gate.outputs.approved != 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg repository "${{ github.repository }}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_id "${{ github.run_id }}" \
+            '{
+              text:
+                ("🚨 *AUTO-REMEDIATION BLOCKED*\n\n" +
+                 "*Repository:* " + $repository + "\n" +
+                 "*Workflow:* " + $workflow + "\n" +
+                 "*Reason:* Terraform drift is outside the approved remediation allowlist.\n" +
+                 "*Action:* Manual review required.\n" +
+                 "*Run ID:* " + $run_id)
+            }')
+
+          curl --fail-with-body \
+            -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
+
+      # --------------------------------------------------
+      # 11. Final result
+      # --------------------------------------------------
+      - name: Enforce Remediation Result
+        if: always()
+        shell: bash
+        run: |
+          DRIFT_CODE="${{ steps.drift.outputs.exit_code }}"
+          APPROVED="${{ steps.gate.outputs.approved }}"
+          REMEDIATED="${{ steps.verify.outputs.remediated }}"
+
+          if [ "$DRIFT_CODE" = "0" ]; then
+            echo "✅ Infrastructure is already compliant."
+            exit 0
+
+          elif [ "$DRIFT_CODE" = "2" ] && \
+               [ "$APPROVED" = "true" ] && \
+               [ "$REMEDIATED" = "true" ]; then
+            echo "✅ DRIFT REMEDIATED AUTOMATICALLY."
+            exit 0
+
+          elif [ "$DRIFT_CODE" = "2" ] && \
+               [ "$APPROVED" != "true" ]; then
+            echo "❌ Drift detected but automatic remediation was not authorised."
+            exit 1
+
+          else
+            echo "❌ Drift remediation workflow failed."
+            exit 1
+          fi
