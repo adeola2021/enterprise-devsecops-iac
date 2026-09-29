@@ -33,7 +33,7 @@ jobs:
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftDetection
+          role-to-assume: arn:aws:iam::011122914928:role/GitHubActions-Terraform-DriftRemediation
           aws-region: us-east-1
           role-session-name: Phase3DriftRemediation
 
