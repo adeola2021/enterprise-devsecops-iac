@@ -79,3 +79,6 @@ terraform-backups/
 
 # Local Phase 1 backup files
 *.phase1-backup
+
+# Phase 4 generated threat-model artifacts
+/reports/phase4/
