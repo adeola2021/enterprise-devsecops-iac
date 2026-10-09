@@ -102,6 +102,150 @@ df6.protocol = "HTTPS"
 df6.dstPort = 443
 df6.usesTLS = True
 
+
+# ============================================================
+# PHASE 4: DEVSECOPS TRUST BOUNDARIES
+# ============================================================
+
+developer_zone = Boundary("Developer Workstation Zone")
+github_zone = Boundary("GitHub Source Control Zone")
+ci_zone = Boundary("GitHub Actions CI Zone")
+identity_zone = Boundary("Federated Identity Zone")
+aws_zone = Boundary("AWS Infrastructure Zone")
+
+# ============================================================
+# PHASE 4: ACTORS AND COMPONENTS
+# ============================================================
+
+developer = Actor("DevSecOps Developer")
+developer.inBoundary = developer_zone
+
+github_repo = Datastore("GitHub Source Repository")
+github_repo.inBoundary = github_zone
+
+github_runner = Server("GitHub Actions Runner")
+github_runner.inBoundary = ci_zone
+github_runner.OS = "Linux"
+github_runner.description = (
+    "Ephemeral CI runner executing pull-request security checks."
+)
+
+pytm_engine = Server("PyTM Threat Modeling Engine")
+pytm_engine.inBoundary = ci_zone
+
+semgrep_engine = Server("Semgrep SAST Engine")
+semgrep_engine.inBoundary = ci_zone
+
+checkov_engine = Server("Checkov IaC Scanner")
+checkov_engine.inBoundary = ci_zone
+
+opa_engine = Server("OPA Conftest Policy Engine")
+opa_engine.inBoundary = ci_zone
+
+terraform_engine = Server("Terraform Plan Engine")
+terraform_engine.inBoundary = ci_zone
+
+github_oidc = Server("GitHub OIDC Token Issuer")
+github_oidc.inBoundary = identity_zone
+
+aws_sts = Server("AWS STS")
+aws_sts.inBoundary = identity_zone
+aws_sts.onAWS = True
+
+iam_role = Server("AWS Terraform Automation IAM Role")
+iam_role.inBoundary = aws_zone
+iam_role.onAWS = True
+
+aws_resources = Datastore("AWS Managed Infrastructure")
+aws_resources.inBoundary = aws_zone
+
+terraform_state = Datastore("Terraform Remote State")
+terraform_state.inBoundary = aws_zone
+terraform_state.isEncrypted = True
+
+github_security = Datastore("GitHub Security Findings")
+github_security.inBoundary = github_zone
+
+# ============================================================
+# PHASE 4: DEVSECOPS DATA FLOWS
+# ============================================================
+
+def secure_flow(source, destination, name):
+    flow = Dataflow(source, destination, name)
+    flow.protocol = "HTTPS"
+    flow.dstPort = 443
+    return flow
+
+secure_flow(
+    developer, github_repo,
+    "Git Push and Pull Request"
+)
+
+secure_flow(
+    github_repo, github_runner,
+    "Pull Request Workflow Trigger"
+)
+
+secure_flow(
+    github_runner, pytm_engine,
+    "Threat Model Execution"
+)
+
+secure_flow(
+    github_runner, semgrep_engine,
+    "Source Code SAST Scan"
+)
+
+secure_flow(
+    github_runner, checkov_engine,
+    "Terraform Static Security Scan"
+)
+
+secure_flow(
+    github_runner, terraform_engine,
+    "Terraform Plan Generation"
+)
+
+secure_flow(
+    terraform_engine, opa_engine,
+    "Terraform Plan JSON Policy Evaluation"
+)
+
+secure_flow(
+    github_runner, github_oidc,
+    "OIDC Token Request"
+)
+
+secure_flow(
+    github_runner, aws_sts,
+    "Assume Role With Web Identity"
+)
+
+secure_flow(
+    aws_sts, iam_role,
+    "Federated Role Authorization"
+)
+
+secure_flow(
+    terraform_engine, aws_resources,
+    "AWS Infrastructure Operations"
+)
+
+secure_flow(
+    terraform_engine, terraform_state,
+    "Terraform State Access"
+)
+
+secure_flow(
+    semgrep_engine, github_security,
+    "Semgrep SARIF Findings"
+)
+
+secure_flow(
+    checkov_engine, github_security,
+    "Checkov SARIF Findings"
+)
+
 # ============================================================
 # PROCESS THREAT MODEL
 # ============================================================
