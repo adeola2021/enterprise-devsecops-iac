@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   iac-security:
@@ -112,6 +113,77 @@ jobs:
           directory: terraform
           framework: terraform
           quiet: false
+
+      # --------------------------------------------------
+      # Phase 4: Semgrep and Checkov SARIF Integration
+      # --------------------------------------------------
+      - name: Install Phase 4 Security Scanners
+        run: |
+          python -m pip install semgrep==1.175.0 checkov==3.3.15
+
+      - name: Run Semgrep Terraform Scan
+        run: |
+          mkdir -p reports/phase4/sast
+          semgrep scan \
+            --config p/terraform \
+            --include '*.tf' \
+            --sarif \
+            --sarif-output reports/phase4/sast/semgrep.sarif \
+            --metrics=off \
+            .
+
+      - name: Run Checkov Repository Scan
+        run: |
+          mkdir -p reports/phase4/sast/checkov
+          checkov \
+            --directory . \
+            --framework terraform \
+            --output sarif \
+            --output-file-path reports/phase4/sast/checkov \
+            --soft-fail
+
+      - name: Validate Phase 4 SARIF Reports
+        run: |
+          python - <<'SARIF'
+          import json
+          from pathlib import Path
+
+          paths = [
+              Path("reports/phase4/sast/semgrep.sarif"),
+              Path("reports/phase4/sast/checkov/results_sarif.sarif"),
+          ]
+
+          for path in paths:
+              assert path.is_file(), f"Missing SARIF: {path}"
+              data = json.loads(path.read_text())
+              assert data.get("version") == "2.1.0", f"Invalid SARIF: {path}"
+              print(f"Validated: {path}")
+          SARIF
+
+      - name: Upload Phase 4 SARIF Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-sast-sarif
+          path: |
+            reports/phase4/sast/semgrep.sarif
+            reports/phase4/sast/checkov/results_sarif.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Semgrep to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/phase4/sast/semgrep.sarif
+          category: phase4-semgrep
+
+      - name: Upload Checkov to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/phase4/sast/checkov/results_sarif.sarif
+          category: phase4-checkov
 
       # --------------------------------------------------
       # 8. Install Conftest
