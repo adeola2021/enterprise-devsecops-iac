@@ -26,6 +26,51 @@ jobs:
       # --------------------------------------------------
       # 2. Setup Terraform
       # --------------------------------------------------
+      - name: Set up Python for Threat Modeling
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install PyTM and Graphviz
+        run: |
+          python -m pip install pytm==1.3.1
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Generate PyTM Threat Model
+        run: |
+          set -euo pipefail
+          mkdir -p reports/phase4
+
+          python threat-model/threat_model.py \
+            --json reports/phase4/threat-model.json
+
+          python threat-model/threat_model.py \
+            --dfd > reports/phase4/architecture-dfd.dot
+
+          dot -Tpng \
+            reports/phase4/architecture-dfd.dot \
+            -o reports/phase4/architecture-dfd.png
+
+          python threat-model/generate_report.py \
+            --input reports/phase4/threat-model.json \
+            --output reports/phase4/threat-report.md
+
+      - name: Validate PyTM Threat Report
+        run: |
+          python -m json.tool reports/phase4/threat-model.json > /dev/null
+          test -s reports/phase4/architecture-dfd.png
+          test -s reports/phase4/threat-report.md
+
+      - name: Upload PyTM Security Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-pytm-threat-model
+          path: reports/phase4/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
