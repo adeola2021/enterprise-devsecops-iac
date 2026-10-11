@@ -74,6 +74,9 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
 
       # --------------------------------------------------
       # 3. Terraform Format Check
@@ -221,6 +224,38 @@ jobs:
             --policy policy/
 
       # --------------------------------------------------
+      # --------------------------------------------------
+      # Phase 4: Genuine AWS Terraform Plan Security Gate
+      # --------------------------------------------------
+      - name: Phase 4 Real AWS Plan Policy Gate
+        run: |
+          set -euo pipefail
+
+          for module in aws-secure-plan aws-real-plan; do
+            echo "=========================================="
+            echo " Generating AWS plan: ${module}"
+            echo "=========================================="
+
+            terraform -chdir="terraform-policy-test/${module}" init \
+              -backend=false \
+              -input=false \
+              -lockfile=readonly
+
+            terraform -chdir="terraform-policy-test/${module}" validate
+
+            terraform -chdir="terraform-policy-test/${module}" plan \
+              -refresh=false \
+              -input=false \
+              -lock=false \
+              -out=tfplan
+
+            terraform -chdir="terraform-policy-test/${module}" show \
+              -json tfplan \
+              > "terraform-policy-test/${module}/tfplan.json"
+          done
+
+          python scripts/verify_phase4_policy.py
+
       # 10. Security Pipeline Summary
       # --------------------------------------------------
       - name: Security Pipeline Summary
@@ -235,4 +270,5 @@ jobs:
           echo "Checkov: PASSED"
           echo "OPA/Conftest Phase 1: PASSED"
           echo "OPA/Conftest Phase 2: PASSED"
+          echo "Phase 4 genuine AWS plan policy gate: PASSED"
           echo "=========================================="

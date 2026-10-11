@@ -82,3 +82,16 @@ terraform-backups/
 
 # Phase 4 generated threat-model artifacts
 /reports/phase4/
+
+# Phase 4 generated Terraform plan evidence
+/terraform-policy-test/real-plan/tfplan
+/terraform-policy-test/real-plan/tfplan.json
+
+# Phase 4 generated AWS test plans
+/terraform-policy-test/aws-real-plan/tfplan
+/terraform-policy-test/aws-real-plan/tfplan.json
+/terraform-policy-test/aws-secure-plan/tfplan
+/terraform-policy-test/aws-secure-plan/tfplan.json
+
+# Disabled local Terraform variable files
+*.tfvars.disabled

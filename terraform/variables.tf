@@ -78,3 +78,10 @@ variable "postgres_parameter_family" {
   type        = string
   default     = "postgres16"
 }
+
+
+variable "project" {
+  description = "Project responsible for the infrastructure"
+  type        = string
+  default     = "Enterprise-DevSecOps"
+}

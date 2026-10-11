@@ -12,7 +12,8 @@
             "tags": {
               "Environment": "dev",
               "Owner": "DevSecOps",
-              "CostCenter": "IT-SEC-001"
+              "CostCenter": "IT-SEC-001",
+              "Project": "Enterprise-DevSecOps"
             }
           }
         },
@@ -25,7 +26,8 @@
             "tags": {
               "Environment": "dev",
               "Owner": "DevSecOps",
-              "CostCenter": "IT-SEC-001"
+              "CostCenter": "IT-SEC-001",
+              "Project": "Enterprise-DevSecOps"
             },
             "ingress": [
               {
