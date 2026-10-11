@@ -228,6 +228,10 @@ jobs:
       # Phase 4: Genuine AWS Terraform Plan Security Gate
       # --------------------------------------------------
       - name: Phase 4 Real AWS Plan Policy Gate
+        env:
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+          AWS_EC2_METADATA_DISABLED: "true"
         run: |
           set -euo pipefail
 
