@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   iac-security:
@@ -26,8 +27,56 @@ jobs:
       # --------------------------------------------------
       # 2. Setup Terraform
       # --------------------------------------------------
+      - name: Set up Python for Threat Modeling
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install PyTM and Graphviz
+        run: |
+          python -m pip install pytm==1.3.1
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Generate PyTM Threat Model
+        run: |
+          set -euo pipefail
+          mkdir -p reports/phase4
+
+          python threat-model/threat_model.py \
+            --json reports/phase4/threat-model.json
+
+          python threat-model/threat_model.py \
+            --dfd > reports/phase4/architecture-dfd.dot
+
+          dot -Tpng \
+            reports/phase4/architecture-dfd.dot \
+            -o reports/phase4/architecture-dfd.png
+
+          python threat-model/generate_report.py \
+            --input reports/phase4/threat-model.json \
+            --output reports/phase4/threat-report.md
+
+      - name: Validate PyTM Threat Report
+        run: |
+          python -m json.tool reports/phase4/threat-model.json > /dev/null
+          test -s reports/phase4/architecture-dfd.png
+          test -s reports/phase4/threat-report.md
+
+      - name: Upload PyTM Security Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-pytm-threat-model
+          path: reports/phase4/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
 
       # --------------------------------------------------
       # 3. Terraform Format Check
@@ -69,6 +118,88 @@ jobs:
           quiet: false
 
       # --------------------------------------------------
+      # Phase 4: Semgrep and Checkov SARIF Integration
+      # --------------------------------------------------
+      - name: Install Phase 4 Security Scanners
+        run: |
+          python -m pip install semgrep==1.175.0 checkov==3.3.15
+
+      - name: Run Semgrep Terraform Scan
+        run: |
+          mkdir -p reports/phase4/sast
+          semgrep scan \
+            --config p/terraform \
+            --include '*.tf' \
+            --sarif \
+            --sarif-output reports/phase4/sast/semgrep.sarif \
+            --metrics=off \
+            .
+
+      # Phase 5: Blocking critical IaC security controls
+      - name: Phase 5 Critical Checkov Gate
+        run: |
+          bash scripts/phase5_checkov_gate.sh
+
+      - name: Phase 5 Negative Security Gate Tests
+        run: |
+          bash scripts/verify_phase5_checkov_gate.sh
+
+      - name: Run Checkov Repository Scan
+        run: |
+          mkdir -p reports/phase4/sast/checkov
+          checkov \
+            --directory . \
+            --skip-path terraform-policy-test/aws-real-plan \
+            --skip-path tests/phase5/critical-gate \
+            --framework terraform \
+            --output sarif \
+            --output-file-path reports/phase4/sast/checkov \
+            --soft-fail
+
+      - name: Validate Phase 4 SARIF Reports
+        run: |
+          python - <<'SARIF'
+          import json
+          from pathlib import Path
+
+          paths = [
+              Path("reports/phase4/sast/semgrep.sarif"),
+              Path("reports/phase4/sast/checkov/results_sarif.sarif"),
+          ]
+
+          for path in paths:
+              assert path.is_file(), f"Missing SARIF: {path}"
+              data = json.loads(path.read_text())
+              assert data.get("version") == "2.1.0", f"Invalid SARIF: {path}"
+              print(f"Validated: {path}")
+          SARIF
+
+      - name: Upload Phase 4 SARIF Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-sast-sarif
+          path: |
+            reports/phase4/sast/semgrep.sarif
+            reports/phase4/sast/checkov/results_sarif.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Semgrep to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/phase4/sast/semgrep.sarif
+          category: phase4-semgrep
+
+      - name: Upload Checkov to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/phase4/sast/checkov/results_sarif.sarif
+          category: phase4-checkov
+
+      # --------------------------------------------------
       # 8. Install Conftest
       # --------------------------------------------------
       - name: Install Conftest
@@ -104,6 +235,42 @@ jobs:
             --policy policy/
 
       # --------------------------------------------------
+      # --------------------------------------------------
+      # Phase 4: Genuine AWS Terraform Plan Security Gate
+      # --------------------------------------------------
+      - name: Phase 4 Real AWS Plan Policy Gate
+        env:
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          set -euo pipefail
+
+          for module in aws-secure-plan aws-real-plan; do
+            echo "=========================================="
+            echo " Generating AWS plan: ${module}"
+            echo "=========================================="
+
+            terraform -chdir="terraform-policy-test/${module}" init \
+              -backend=false \
+              -input=false \
+              -lockfile=readonly
+
+            terraform -chdir="terraform-policy-test/${module}" validate
+
+            terraform -chdir="terraform-policy-test/${module}" plan \
+              -refresh=false \
+              -input=false \
+              -lock=false \
+              -out=tfplan
+
+            terraform -chdir="terraform-policy-test/${module}" show \
+              -json tfplan \
+              > "terraform-policy-test/${module}/tfplan.json"
+          done
+
+          python scripts/verify_phase4_policy.py
+
       # 10. Security Pipeline Summary
       # --------------------------------------------------
       - name: Security Pipeline Summary
@@ -118,4 +285,5 @@ jobs:
           echo "Checkov: PASSED"
           echo "OPA/Conftest Phase 1: PASSED"
           echo "OPA/Conftest Phase 2: PASSED"
+          echo "Phase 4 genuine AWS plan policy gate: PASSED"
           echo "=========================================="

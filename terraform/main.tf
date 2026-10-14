@@ -38,6 +38,7 @@ locals {
   mandatory_tags = {
     Environment = var.environment
     Owner       = var.owner
+    Project     = var.project
     CostCenter  = var.cost_center
   }
 

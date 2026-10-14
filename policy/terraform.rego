@@ -91,6 +91,7 @@ deny contains msg if {
 
 allowed_aws_regions := {
 	"us-east-1",
+	"us-west-2",
 	"eu-west-1",
 }
 
@@ -181,6 +182,7 @@ deny contains msg if {
 	bucket_address := resource.address
 
 	not s3_bucket_has_kms_encryption(bucket_address)
+	not phase5_approved_logging_destination(resource)
 
 	msg := sprintf(
 		"S3 bucket %s must have server-side encryption configured with a customer-managed KMS key",
@@ -189,20 +191,19 @@ deny contains msg if {
 }
 
 s3_bucket_has_kms_encryption(bucket_address) if {
-	encryption := input.planned_values.root_module.resources[_]
+	bucket := input.planned_values.root_module.resources[_]
+	bucket.address == bucket_address
 
+	encryption := input.planned_values.root_module.resources[_]
 	encryption.type == "aws_s3_bucket_server_side_encryption_configuration"
 
-	encryption.values.bucket != null
-
-	contains(encryption.address, trim_prefix(bucket_address, "aws_s3_bucket."))
+	s3_resource_matches_bucket(encryption, bucket)
 
 	rule := encryption.values.rule[_]
-	default_encryption := rule.apply_server_side_encryption_by_default[_]
+	setting := rule.apply_server_side_encryption_by_default[_]
 
-	default_encryption.sse_algorithm == "aws:kms"
-	default_encryption.kms_master_key_id != null
-	default_encryption.kms_master_key_id != ""
+	setting.sse_algorithm == "aws:kms"
+	s3_has_customer_kms_reference(encryption)
 }
 
 # ----------------------------------------------------------
@@ -224,11 +225,13 @@ deny contains msg if {
 }
 
 s3_bucket_has_public_access_block(bucket_address) if {
-	block := input.planned_values.root_module.resources[_]
+	bucket := input.planned_values.root_module.resources[_]
+	bucket.address == bucket_address
 
+	block := input.planned_values.root_module.resources[_]
 	block.type == "aws_s3_bucket_public_access_block"
 
-	contains(block.address, trim_prefix(bucket_address, "aws_s3_bucket."))
+	s3_resource_matches_bucket(block, bucket)
 
 	block.values.block_public_acls == true
 	block.values.ignore_public_acls == true
@@ -252,7 +255,7 @@ deny contains msg if {
 	not allowed_aws_regions[region]
 
 	msg := sprintf(
-		"AWS provider %s uses prohibited region %s. Allowed regions are us-east-1 and eu-west-1",
+		"AWS provider %s uses prohibited region %s. Allowed regions are us-east-1, us-west-2 and eu-west-1",
 		[provider_name, region],
 	)
 }

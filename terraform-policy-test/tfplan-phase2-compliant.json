@@ -1,7 +1,6 @@
 {
   "format_version": "1.2",
   "terraform_version": "1.14.0",
-
   "planned_values": {
     "root_module": {
       "resources": [
@@ -12,10 +11,12 @@
           "name": "compliant",
           "values": {
             "encrypted": true,
-            "kms_key_id": "arn:aws:kms:us-east-1:011122914928:key/11111111-2222-3333-4444-555555555555"
+            "kms_key_id": "arn:aws:kms:us-east-1:011122914928:key/11111111-2222-3333-4444-555555555555",
+            "tags": {
+              "Project": "Enterprise-DevSecOps"
+            }
           }
         },
-
         {
           "address": "aws_s3_bucket.compliant",
           "mode": "managed",
@@ -26,11 +27,11 @@
             "tags": {
               "Environment": "dev",
               "Owner": "DevSecOps",
-              "CostCenter": "IT-SEC-001"
+              "CostCenter": "IT-SEC-001",
+              "Project": "Enterprise-DevSecOps"
             }
           }
         },
-
         {
           "address": "aws_s3_bucket_server_side_encryption_configuration.compliant",
           "mode": "managed",
@@ -50,7 +51,6 @@
             ]
           }
         },
-
         {
           "address": "aws_s3_bucket_public_access_block.compliant",
           "mode": "managed",
@@ -67,7 +67,6 @@
       ]
     }
   },
-
   "configuration": {
     "provider_config": {
       "aws": {
