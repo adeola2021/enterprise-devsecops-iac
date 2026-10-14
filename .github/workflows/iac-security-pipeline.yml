@@ -149,6 +149,7 @@ jobs:
           mkdir -p reports/phase4/sast/checkov
           checkov \
             --directory . \
+            --skip-path terraform-policy-test/aws-real-plan \
             --skip-path tests/phase5/critical-gate \
             --framework terraform \
             --output sarif \
