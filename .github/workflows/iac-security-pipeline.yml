@@ -135,11 +135,21 @@ jobs:
             --metrics=off \
             .
 
+      # Phase 5: Blocking critical IaC security controls
+      - name: Phase 5 Critical Checkov Gate
+        run: |
+          bash scripts/phase5_checkov_gate.sh
+
+      - name: Phase 5 Negative Security Gate Tests
+        run: |
+          bash scripts/verify_phase5_checkov_gate.sh
+
       - name: Run Checkov Repository Scan
         run: |
           mkdir -p reports/phase4/sast/checkov
           checkov \
             --directory . \
+            --skip-path tests/phase5/critical-gate \
             --framework terraform \
             --output sarif \
             --output-file-path reports/phase4/sast/checkov \

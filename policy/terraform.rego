@@ -182,6 +182,7 @@ deny contains msg if {
 	bucket_address := resource.address
 
 	not s3_bucket_has_kms_encryption(bucket_address)
+	not phase5_approved_logging_destination(resource)
 
 	msg := sprintf(
 		"S3 bucket %s must have server-side encryption configured with a customer-managed KMS key",
@@ -190,19 +191,19 @@ deny contains msg if {
 }
 
 s3_bucket_has_kms_encryption(bucket_address) if {
-    bucket := input.planned_values.root_module.resources[_]
-    bucket.address == bucket_address
+	bucket := input.planned_values.root_module.resources[_]
+	bucket.address == bucket_address
 
-    encryption := input.planned_values.root_module.resources[_]
-    encryption.type == "aws_s3_bucket_server_side_encryption_configuration"
+	encryption := input.planned_values.root_module.resources[_]
+	encryption.type == "aws_s3_bucket_server_side_encryption_configuration"
 
-    s3_resource_matches_bucket(encryption, bucket)
+	s3_resource_matches_bucket(encryption, bucket)
 
-    rule := encryption.values.rule[_]
-    setting := rule.apply_server_side_encryption_by_default[_]
+	rule := encryption.values.rule[_]
+	setting := rule.apply_server_side_encryption_by_default[_]
 
-    setting.sse_algorithm == "aws:kms"
-    s3_has_customer_kms_reference(encryption)
+	setting.sse_algorithm == "aws:kms"
+	s3_has_customer_kms_reference(encryption)
 }
 
 # ----------------------------------------------------------
@@ -224,18 +225,18 @@ deny contains msg if {
 }
 
 s3_bucket_has_public_access_block(bucket_address) if {
-    bucket := input.planned_values.root_module.resources[_]
-    bucket.address == bucket_address
+	bucket := input.planned_values.root_module.resources[_]
+	bucket.address == bucket_address
 
-    block := input.planned_values.root_module.resources[_]
-    block.type == "aws_s3_bucket_public_access_block"
+	block := input.planned_values.root_module.resources[_]
+	block.type == "aws_s3_bucket_public_access_block"
 
-    s3_resource_matches_bucket(block, bucket)
+	s3_resource_matches_bucket(block, bucket)
 
-    block.values.block_public_acls == true
-    block.values.ignore_public_acls == true
-    block.values.block_public_policy == true
-    block.values.restrict_public_buckets == true
+	block.values.block_public_acls == true
+	block.values.ignore_public_acls == true
+	block.values.block_public_policy == true
+	block.values.restrict_public_buckets == true
 }
 
 # ----------------------------------------------------------

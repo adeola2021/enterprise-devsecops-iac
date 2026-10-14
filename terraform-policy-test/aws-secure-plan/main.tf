@@ -57,8 +57,10 @@ resource "aws_s3_bucket_public_access_block" "secure" {
 resource "aws_security_group" "secure" {
   name        = "phase4-secure-security-group"
   description = "Positive policy test"
+  vpc_id      = aws_vpc.secure.id
 
   ingress {
+    description = "Allow HTTPS traffic for security policy testing"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -66,4 +68,34 @@ resource "aws_security_group" "secure" {
   }
 
   tags = local.mandatory_tags
+}
+
+
+resource "aws_s3_bucket_versioning" "secure" {
+  bucket = aws_s3_bucket.secure.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "secure" {
+  bucket = aws_s3_bucket.secure.id
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.secure]
 }
