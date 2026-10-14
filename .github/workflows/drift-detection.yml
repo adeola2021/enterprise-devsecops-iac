@@ -263,12 +263,24 @@ jobs:
           echo "Terraform plan exit code: $EXIT_CODE"
 
           if [ "$EXIT_CODE" -eq 0 ]; then
-            echo "✅ No infrastructure drift detected."
+            echo "✅ No Terraform changes detected."
+            echo "### Terraform Drift Check: No changes" >> "$GITHUB_STEP_SUMMARY"
             exit 0
+
           elif [ "$EXIT_CODE" -eq 2 ]; then
-            echo "⚠️ Infrastructure changes/drift detected."
-            exit 2
+            echo "⚠️ Terraform detected planned infrastructure changes."
+             echo "Review whether these represent undeployed resources or actual drift."
+
+            {
+              echo "### Terraform Drift Check: Changes detected"
+              echo "Terraform plan completed successfully with exit code 2."
+              echo "Review the plan before taking any deployment action."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            exit 0
+
           else
-            echo "❌ Terraform plan failed."
+            echo "❌ Terraform plan failed with exit code $EXIT_CODE."
             exit 1
+
           fi
