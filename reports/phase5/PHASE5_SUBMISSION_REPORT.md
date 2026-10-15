@@ -86,7 +86,7 @@ No successful AWS deployment is claimed.
 
 ## 7. Outstanding Activities
 
-- Verify the Phase 5 workflow on GitHub Actions.
+- Verify the updated Phase 5 API Gateway tests on GitHub Actions.
 - Review final changes and security exceptions.
 - Complete threat triage and assign control owners.
 - Validate production-specific AWS permissions before deployment.
@@ -99,3 +99,68 @@ tests, and an initial threat-to-control register.
 
 Remote CI verification and production deployment validation
 remain outstanding.
+
+## 9. Final Phase 5 Control Mapping and Validation
+
+### Threat-to-Control Traceability
+
+The threat-control matrix preserves all 214 PyTM findings.
+
+The 20 Very High findings have been classified into:
+- 12 application-security findings.
+- 4 application-security/AWS-infrastructure findings.
+- 4 authentication and session-security findings.
+
+The matrix distinguishes existing preventive infrastructure controls
+from application-layer mitigations that remain unverified.
+
+### API Gateway Trust-Boundary Control
+
+A preventive OPA policy was introduced at:
+
+`policy/phase5-api-gateway.rego`
+
+The policy rejects API Gateway REST methods and API Gateway V2
+routes configured without authorization.
+
+This is a preventive infrastructure configuration control and does
+not directly eliminate SQL injection, XSS, path traversal, malicious
+file upload, or session-hijacking vulnerabilities.
+
+No API Gateway resources were identified in the Terraform directories
+reviewed. Therefore, live deployment and enforcement are not claimed.
+
+### Local Security Validation
+
+The following checks passed:
+
+- OPA policy syntax validation.
+- Four existing Phase 4 regression tests.
+- Phase 5 critical Checkov gates.
+- Negative tests for CKV_AWS_24 and CKV_AWS_145.
+- API Gateway REST authorization positive and negative tests.
+- API Gateway V2 authorization positive and negative tests.
+- Eight API Gateway authorization tests passed, including nested
+  Terraform modules and missing authorization attributes.
+- Direct OPA evaluation confirmed denial of an insecure REST method.
+- All local security validation commands returned exit code 0.
+
+### Previously Verified GitHub Actions
+
+- Phase 4/5 merge commit: 4554d96.
+- IaC Security Pipeline run: 38512301975 — successful.
+- Terraform Drift Detection run: 38600649347 — successful.
+
+These previous runs do not constitute CI verification of the
+additional API Gateway policy introduced on the current branch.
+
+### Outstanding Risks and Activities
+
+- Confirm the new API Gateway policy executes in GitHub Actions.
+- Preserve nested-module and missing-authorization regression coverage.
+- Complete application-level mitigation testing and assign control owners.
+- Review the documented S3 logging encryption exception.
+- Validate production-specific AWS permissions before deployment.
+- Perform authorized non-production deployment verification.
+
+No successful AWS production deployment is claimed.

@@ -213,6 +213,22 @@ jobs:
           conftest --version
 
       # --------------------------------------------------
+      # Phase 5: Install standalone OPA CLI
+      - name: Install OPA CLI
+        run: |
+          set -euo pipefail
+
+          OPA_VERSION="1.9.0"
+
+          curl -fL --retry 3 \
+            "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static" \
+            -o opa
+
+          chmod +x opa
+          sudo mv opa /usr/local/bin/opa
+
+          opa version
+
       # 9. Run OPA/Conftest Policy Test
       # --------------------------------------------------
       - name: OPA Policy Enforcement
@@ -271,6 +287,14 @@ jobs:
 
           python scripts/verify_phase4_policy.py
 
+          echo "=========================================="
+          echo " Phase 5 API Gateway Policy Tests"
+          echo "=========================================="
+
+          opa check policy/
+          python3 tests/phase5/verify_api_gateway_policy.py
+          python3 tests/phase5/verify_api_gateway_extended.py
+
       # 10. Security Pipeline Summary
       # --------------------------------------------------
       - name: Security Pipeline Summary
@@ -286,4 +310,6 @@ jobs:
           echo "OPA/Conftest Phase 1: PASSED"
           echo "OPA/Conftest Phase 2: PASSED"
           echo "Phase 4 genuine AWS plan policy gate: PASSED"
+          echo "Phase 5 critical Checkov gates: PASSED"
+          echo "Phase 5 API Gateway authorization tests: PASSED"
           echo "=========================================="
