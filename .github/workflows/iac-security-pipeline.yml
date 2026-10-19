@@ -294,6 +294,7 @@ jobs:
           opa check policy/
           python3 tests/phase5/verify_api_gateway_policy.py
           python3 tests/phase5/verify_api_gateway_extended.py
+          python3 tests/phase5/verify_database_logging.py
 
       # 10. Security Pipeline Summary
       # --------------------------------------------------
