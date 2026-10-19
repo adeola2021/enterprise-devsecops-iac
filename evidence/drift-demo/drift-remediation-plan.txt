@@ -1,0 +1,26 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [33m~[0m update in-place[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_ssm_parameter.drift_demo[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_ssm_parameter" "drift_demo" {
+        id              = "/enterprise-devsecops/drift-demo"
+        name            = "/enterprise-devsecops/drift-demo"
+      [33m~[0m[0m tags            = {
+            "CostCenter"      = "IT-SEC-001"
+          [31m-[0m[0m "DriftSimulation" = "Injected" [90m-> null[0m[0m
+            "Environment"     = "dev"
+            "Owner"           = "DevSecOps"
+            "Purpose"         = "Terraform Drift Detection Demo"
+        }
+      [33m~[0m[0m tags_all        = {
+          [31m-[0m[0m "DriftSimulation" = "Injected" [90m-> null[0m[0m
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (10 unchanged attributes hidden)[0m[0m
+    }
+
+[1mPlan:[0m [0m0 to add, 1 to change, 0 to destroy.
