@@ -1,0 +1,29 @@
+
+[1m[36mNote:[0m[1m Objects have changed outside of Terraform
+[0m
+Terraform detected the following changes made outside of Terraform since the
+last "terraform apply" which may have affected this plan:
+
+[1m  # aws_ssm_parameter.drift_demo[0m has changed
+[0m  [33m~[0m[0m resource "aws_ssm_parameter" "drift_demo" {
+        id              = "/enterprise-devsecops/drift-demo"
+        name            = "/enterprise-devsecops/drift-demo"
+      [33m~[0m[0m tags            = {
+            "CostCenter"      = "IT-SEC-001"
+          [32m+[0m[0m "DriftSimulation" = "Injected"
+            "Environment"     = "dev"
+            "Owner"           = "DevSecOps"
+            "Purpose"         = "Terraform Drift Detection Demo"
+        }
+      [33m~[0m[0m tags_all        = {
+          [32m+[0m[0m "DriftSimulation" = "Injected"
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (10 unchanged attributes hidden)[0m[0m
+    }
+
+
+This is a refresh-only plan, so Terraform will not take any actions to undo
+these. If you were expecting these changes then you can apply this plan to
+record the updated values in the Terraform state without changing any remote
+objects.
