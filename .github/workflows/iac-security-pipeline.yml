@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - phase6-appsec-semgrep
 
 permissions:
   contents: read
