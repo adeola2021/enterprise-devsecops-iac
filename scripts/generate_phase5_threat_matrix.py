@@ -916,7 +916,7 @@ for index, finding in enumerate(findings, 1):
             "Verification Status": "Unit tests passed; CI and deployment verification pending",
             "Control Classification": "Preventive IaC configuration check",
             "OPA Policy Reference": "policy/phase5-database-logging.rego",
-            "AWS Security Hub Control Reference": "Not yet mapped; confirm applicable AWS controls",
+            "AWS Security Hub Control Reference": "RDS.9 (RDS DB instances should publish logs to CloudWatch Logs; Medium; Config rule rds-logging-enabled). Partial correspondence: covers log export only, not statement/connection/disconnection logging parameters.",
             "Control Coverage Assessment": (
                 "Partial: validates planned PostgreSQL log export and logging "
                 "parameters only; does not verify deployed settings, least-privilege "
