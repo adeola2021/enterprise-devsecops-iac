@@ -887,6 +887,13 @@ for index, finding in enumerate(findings, 1):
     if targeted:
         row.update(targeted)
 
+    if threat_id == "AA04":
+        rows[-1]["AWS Security Hub Control Reference"] = (
+            "APIGateway.8 (API Gateway routes should specify an authorization type; Medium; "
+            "Config rule api-gwv2-authorization-type-configured). Partial: covers HTTP/WebSocket "
+            "(V2) routes only, not REST methods, and gives no server-side input-validation coverage."
+        )
+
     if threat_id in {"INP05", "HA01", "SC02"}:
         rows[-1].update({
             "OPA Policy Reference": (
@@ -895,8 +902,9 @@ for index, finding in enumerate(findings, 1):
                 "No direct OPA rule for the application-level weakness itself."
             ),
             "AWS Security Hub Control Reference": (
-                "APIGateway.4 (WAF on API Gateway stages), pending verification "
-                "against current AWS documentation"
+                "APIGateway.4 (API Gateway should be associated with a WAF Web ACL; Medium; "
+                "Config rule api-gw-associated-with-waf). Direct correspondence for REST "
+                "stages; supporting control for this threat, not a fix for the application flaw."
             ),
             "Control Classification": "Supporting preventive IaC check; not direct mitigation",
             "Control Coverage Assessment": (
