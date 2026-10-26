@@ -296,6 +296,7 @@ jobs:
           python3 tests/phase5/verify_api_gateway_policy.py
           python3 tests/phase5/verify_api_gateway_extended.py
           python3 tests/phase5/verify_database_logging.py
+          python3 tests/phase5/verify_waf_association.py
 
       # 10. Security Pipeline Summary
       # --------------------------------------------------
@@ -314,4 +315,6 @@ jobs:
           echo "Phase 4 genuine AWS plan policy gate: PASSED"
           echo "Phase 5 critical Checkov gates: PASSED"
           echo "Phase 5 API Gateway authorization tests: PASSED"
+          echo "Phase 5 database logging policy tests: PASSED"
+          echo "Phase 5 WAF association policy tests: PASSED"
           echo "=========================================="

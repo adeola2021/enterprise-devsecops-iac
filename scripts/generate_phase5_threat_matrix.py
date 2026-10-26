@@ -887,6 +887,28 @@ for index, finding in enumerate(findings, 1):
     if targeted:
         row.update(targeted)
 
+    if threat_id in {"INP05", "HA01", "SC02"}:
+        rows[-1].update({
+            "OPA Policy Reference": (
+                "policy/phase5-waf.rego (supporting control only: requires a WAFv2 "
+                "web ACL association whenever an API Gateway REST stage is in the plan). "
+                "No direct OPA rule for the application-level weakness itself."
+            ),
+            "AWS Security Hub Control Reference": (
+                "APIGateway.4 (WAF on API Gateway stages), pending verification "
+                "against current AWS documentation"
+            ),
+            "Control Classification": "Supporting preventive IaC check; not direct mitigation",
+            "Control Coverage Assessment": (
+                "Partial, supporting only. The WAF association policy is unit-tested on "
+                "synthetic plans, but neither test module contains an API Gateway REST "
+                "stage, so it has not been exercised against a real plan. It does not "
+                "verify rule groups or that the association targets the stage, and it "
+                "does not replace application-level fixes (parameterized queries, "
+                "output encoding, path canonicalization). Application tests are still required."
+            ),
+        })
+
     if threat_id == "DE04":
         rows[-1].update({
             "Control Owner": "To be assigned",
