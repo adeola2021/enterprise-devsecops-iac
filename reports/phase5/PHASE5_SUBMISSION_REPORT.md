@@ -32,8 +32,9 @@ Critical blocking controls:
 
 Local validation:
 
-- Main Terraform module: 5 passed, 0 failed.
-- Secure AWS fixture: 2 passed, 0 failed, 1 skipped.
+- Critical gate (CKV_AWS_24, CKV_AWS_145 only), main Terraform module: 5 passed, 0 failed.
+- Critical gate (CKV_AWS_24, CKV_AWS_145 only), secure AWS fixture: 2 passed, 0 failed, 1 skipped (CKV_AWS_145 exception on the S3 access-logs bucket).
+- Full Checkov scan of the secure AWS fixture (all checks): 65 passed, 0 failed, 1 skipped.
 - Negative tests: Both critical vulnerabilities detected and blocked.
 
 The GitHub Actions workflow includes positive and negative
