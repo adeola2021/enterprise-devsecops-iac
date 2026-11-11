@@ -147,10 +147,9 @@ jobs:
             --exclude venv \
             --exclude backups \
             --exclude reports \
-            --sarif \
-            --output reports/phase6/semgrep-appsec.sarif \
+            --sarif-output=reports/phase6/semgrep-appsec.sarif \
+            --json-output=reports/phase6/semgrep-appsec.json \
             --metrics=off \
-            --error \
             .
 
       - name: Validate Phase 6 AppSec SARIF
@@ -167,6 +166,9 @@ jobs:
           count = len(data["runs"][0].get("results", []))
           print(f"Validated: {path} ({count} findings)")
           SARIF
+
+      - name: Phase 6 High/Critical Severity Gate
+        run: python scripts/semgrep_severity_gate.py reports/phase6/semgrep-appsec.json
 
       # Phase 5: Blocking critical IaC security controls
       - name: Phase 5 Critical Checkov Gate

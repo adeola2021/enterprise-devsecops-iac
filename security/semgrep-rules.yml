@@ -18,6 +18,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: HIGH
       technology:
         - python
       confidence: HIGH
@@ -45,6 +46,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: CRITICAL
       cwe:
         - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
       owasp:
@@ -75,6 +77,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: CRITICAL
       cwe:
         - "CWE-89"
       owasp:
@@ -106,6 +109,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: HIGH
       cwe:
         - "CWE-328: Use of Weak Hash"
       confidence: HIGH
@@ -134,6 +138,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: HIGH
       cwe:
         - "CWE-328"
       confidence: HIGH
@@ -162,6 +167,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: HIGH
       cwe:
         - "CWE-502: Deserialization of Untrusted Data"
       owasp:
@@ -195,6 +201,7 @@ rules:
 
     metadata:
       category: security
+      security_severity: HIGH
       cwe:
         - "CWE-798: Use of Hard-coded Credentials"
       owasp:
