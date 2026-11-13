@@ -1,9 +1,218 @@
+
 rules:
+
+  # =========================================================
+  # EXISTING RULE: DANGEROUS SUBPROCESS EXECUTION
+  # =========================================================
+
   - id: dangerous-subprocess-shell
+
     languages:
       - python
-    message: "Potential command injection: avoid shell=True with subprocess."
+
+    message: >
+      Potential command injection. Avoid shell=True when
+      executing subprocess commands.
+
     severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: HIGH
+      technology:
+        - python
+      confidence: HIGH
+
     patterns:
       - pattern: |
           subprocess.$FUNC(..., shell=True, ...)
+
+
+  # =========================================================
+  # SEC001: SQL INJECTION
+  # =========================================================
+
+  - id: sec001-python-sql-injection
+
+    languages:
+      - python
+
+    message: >
+      Potential SQL injection. Do not construct SQL queries
+      using string concatenation or f-strings with external
+      input. Use parameterized queries.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: CRITICAL
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      owasp:
+        - A03:2021-Injection
+      confidence: HIGH
+      technology:
+        - python
+
+    patterns:
+      - pattern-either:
+          - pattern: $DB.execute($QUERY + $VALUE)
+          - pattern: $DB.execute(f"...{$VALUE}...")
+          - pattern: $DB.execute($QUERY.format(...))
+          - pattern: $DB.executemany($QUERY + $VALUE)
+
+
+  - id: sec001-nodejs-sql-injection
+
+    languages:
+      - javascript
+      - typescript
+
+    message: >
+      Potential SQL injection in Node.js. Use parameterized
+      SQL queries instead of concatenating untrusted input.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: CRITICAL
+      cwe:
+        - "CWE-89"
+      owasp:
+        - A03:2021-Injection
+      confidence: HIGH
+
+    patterns:
+      - pattern-either:
+          - pattern: $DB.query($QUERY + $VALUE)
+          - pattern: $DB.execute($QUERY + $VALUE)
+          - pattern: $DB.query(`...${$VALUE}...`)
+
+
+  # =========================================================
+  # SEC002: WEAK CRYPTOGRAPHIC HASHING
+  # =========================================================
+
+  - id: sec002-python-weak-hash
+
+    languages:
+      - python
+
+    message: >
+      Weak cryptographic hash detected. MD5 and SHA1 should
+      not be used for security-sensitive hashing. Consider
+      SHA-256 or an appropriate password hashing algorithm.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: HIGH
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      confidence: HIGH
+      technology:
+        - python
+
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
+          - pattern: hashlib.new("md5", ...)
+          - pattern: hashlib.new("sha1", ...)
+
+
+  - id: sec002-nodejs-weak-hash
+
+    languages:
+      - javascript
+      - typescript
+
+    message: >
+      Weak cryptographic hashing detected. Avoid MD5 and
+      SHA1 for security-sensitive applications.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: HIGH
+      cwe:
+        - "CWE-328"
+      confidence: HIGH
+
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createHash("md5")
+          - pattern: crypto.createHash("sha1")
+
+
+  # =========================================================
+  # SEC003: UNSAFE DESERIALIZATION
+  # =========================================================
+
+  - id: sec003-python-unsafe-pickle
+
+    languages:
+      - python
+
+    message: >
+      Unsafe deserialization detected. Python pickle can
+      execute arbitrary code when loading untrusted data.
+      Use a safe data format such as JSON where appropriate.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: HIGH
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - A08:2021-Software and Data Integrity Failures
+      confidence: HIGH
+      technology:
+        - python
+
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads($DATA)
+          - pattern: pickle.load($FILE)
+
+
+  # =========================================================
+  # SEC004: HARDCODED CREDENTIALS
+  # =========================================================
+
+  - id: sec004-hardcoded-credentials
+
+    languages:
+      - python
+      - javascript
+      - typescript
+
+    message: >
+      Potential hardcoded credential detected. Store secrets
+      in environment variables or an approved secrets manager.
+
+    severity: ERROR
+
+    metadata:
+      category: security
+      security_severity: HIGH
+      cwe:
+        - "CWE-798: Use of Hard-coded Credentials"
+      owasp:
+        - A07:2021-Identification and Authentication Failures
+      confidence: MEDIUM
+
+    patterns:
+      - pattern-either:
+          - pattern: $KEY = "..."
+          - pattern: $KEY = '...'
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)(password|passwd|secret|api_key|apikey|access_token|auth_token)
+

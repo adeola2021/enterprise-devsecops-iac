@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - phase6-appsec-semgrep
 
 permissions:
   contents: read
@@ -135,6 +136,40 @@ jobs:
             --metrics=off \
             .
 
+      # --------------------------------------------------
+      # Phase 6: Custom Semgrep AppSec rules (blocking)
+      # --------------------------------------------------
+      - name: Run Semgrep AppSec Scan (Phase 6)
+        run: |
+          mkdir -p reports/phase6
+          semgrep scan \
+            --config security/semgrep-rules.yml \
+            --exclude venv \
+            --exclude backups \
+            --exclude reports \
+            --sarif-output=reports/phase6/semgrep-appsec.sarif \
+            --json-output=reports/phase6/semgrep-appsec.json \
+            --metrics=off \
+            .
+
+      - name: Validate Phase 6 AppSec SARIF
+        if: always()
+        run: |
+          python - <<'SARIF'
+          import json
+          from pathlib import Path
+
+          path = Path("reports/phase6/semgrep-appsec.sarif")
+          assert path.is_file(), f"Missing SARIF: {path}"
+          data = json.loads(path.read_text())
+          assert data.get("version") == "2.1.0", f"Invalid SARIF: {path}"
+          count = len(data["runs"][0].get("results", []))
+          print(f"Validated: {path} ({count} findings)")
+          SARIF
+
+      - name: Phase 6 High/Critical Severity Gate
+        run: python scripts/semgrep_severity_gate.py reports/phase6/semgrep-appsec.json
+
       # Phase 5: Blocking critical IaC security controls
       - name: Phase 5 Critical Checkov Gate
         run: |
@@ -198,6 +233,22 @@ jobs:
         with:
           sarif_file: reports/phase4/sast/checkov/results_sarif.sarif
           category: phase4-checkov
+
+      - name: Upload Phase 6 AppSec SARIF Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase6-semgrep-appsec-sarif
+          path: reports/phase6/semgrep-appsec.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload AppSec Semgrep to GitHub Code Scanning
+        if: always() && hashFiles('reports/phase6/semgrep-appsec.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/phase6/semgrep-appsec.sarif
+          category: phase6-semgrep-appsec
 
       # --------------------------------------------------
       # 8. Install Conftest
@@ -295,6 +346,7 @@ jobs:
           python3 tests/phase5/verify_api_gateway_policy.py
           python3 tests/phase5/verify_api_gateway_extended.py
           python3 tests/phase5/verify_database_logging.py
+          python3 tests/phase5/verify_waf_association.py
 
       # 10. Security Pipeline Summary
       # --------------------------------------------------
@@ -313,4 +365,7 @@ jobs:
           echo "Phase 4 genuine AWS plan policy gate: PASSED"
           echo "Phase 5 critical Checkov gates: PASSED"
           echo "Phase 5 API Gateway authorization tests: PASSED"
+          echo "Phase 5 database logging policy tests: PASSED"
+          echo "Phase 5 WAF association policy tests: PASSED"
+          echo "Phase 6 custom Semgrep AppSec rules: PASSED"
           echo "=========================================="

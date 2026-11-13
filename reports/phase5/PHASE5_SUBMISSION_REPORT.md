@@ -19,9 +19,14 @@ The secure AWS test fixture includes:
 - KMS key policy configuration.
 - Default security group restrictions.
 
-The S3 access logging destination uses SSE-S3 with a documented
-Checkov exception. OPA permits this only when the required
-logging-destination configuration and associated controls exist.
+The S3 access logging destination bucket uses SSE-S3 (AES-256) with a
+documented Checkov exception for CKV_AWS_145. AWS does not support default
+SSE-KMS encryption on server access logging destination buckets; only SSE-S3
+is supported (AWS S3 User Guide, "Troubleshoot server access logging":
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/troubleshooting-server-access-logging.html).
+The suppression applies to that bucket only. OPA permits it only when the
+required logging-destination configuration and associated controls exist,
+and all other buckets remain subject to the blocking CKV_AWS_145 gate.
 
 ## 3. Checkov Validation
 
@@ -32,8 +37,9 @@ Critical blocking controls:
 
 Local validation:
 
-- Main Terraform module: 5 passed, 0 failed.
-- Secure AWS fixture: 2 passed, 0 failed, 1 skipped.
+- Critical gate (CKV_AWS_24, CKV_AWS_145 only), main Terraform module: 5 passed, 0 failed.
+- Critical gate (CKV_AWS_24, CKV_AWS_145 only), secure AWS fixture: 2 passed, 0 failed, 1 skipped (CKV_AWS_145 exception on the S3 access-logs bucket).
+- Full Checkov scan of the secure AWS fixture (all checks): 65 passed, 0 failed, 1 skipped.
 - Negative tests: Both critical vulnerabilities detected and blocked.
 
 The GitHub Actions workflow includes positive and negative
