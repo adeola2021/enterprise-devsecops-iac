@@ -74,7 +74,7 @@ resource "aws_iam_role_policy" "god_mode_heredoc" {
   name   = "god-mode-heredoc"
   role   = aws_iam_role.app.id
   policy = <<POLICY
-{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::segun-demo-logs-bucket/*"]}]}
 POLICY
 }
 
@@ -84,6 +84,6 @@ resource "aws_iam_role_policy" "god_mode" {
   role = aws_iam_role.app.id
   policy = jsonencode({
     Version   = "2012-10-17"
-    Statement = [{ Effect = "Allow", Action = "*", Resource = "*" }]
+    Statement = [{ Effect = "Allow", Action = ["s3:GetObject"], Resource = ["arn:aws:s3:::segun-demo-logs-bucket/*"] }]
   })
 }
