@@ -1,0 +1,4 @@
+Checkov	pass	4s	https://github.com/adeola2021/enterprise-devsecops-iac/runs/136033336430
+IaC Security Checks	pass	2m42s	https://github.com/adeola2021/enterprise-devsecops-iac/actions/runs/44659096750/job/136032581989
+Semgrep OSS	pass	4s	https://github.com/adeola2021/enterprise-devsecops-iac/runs/136033288859
+gates	pass	53s	https://github.com/adeola2021/enterprise-devsecops-iac/actions/runs/44659096758/job/136032581765

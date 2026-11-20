@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TF_DIR: terraform/fixture
-      CONFTEST_VERSION: "0.62.0"
+      CONFTEST_VERSION: "0.69.0"
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
