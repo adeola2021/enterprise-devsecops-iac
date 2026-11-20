@@ -1,0 +1,7 @@
+[33mWARN[0m - plan.json - cloud_security - [IAM_WILDCARD] aws_iam_role_policy.god_mode: Allow Action:* on Resource:* (needs manual least-privilege rewrite)
+[33mWARN[0m - plan.json - cloud_security - [IAM_WILDCARD] aws_iam_role_policy.god_mode_heredoc: Allow Action:* on Resource:* (needs manual least-privilege rewrite)
+[31mFAIL[0m - plan.json - cloud_security - [S3_ENCRYPTION] aws_s3_bucket.logs: S3 bucket has no server-side encryption configuration
+[31mFAIL[0m - plan.json - cloud_security - [SG_OPEN_ADMIN] aws_security_group.web: ingress 22-22 open to the internet
+[31mFAIL[0m - plan.json - cloud_security - [SG_OPEN_ADMIN] aws_security_group.web: ingress 3389-3389 open to the internet
+
+[31m5 tests, 0 passed, 2 warnings, 3 failures, 0 exceptions[0m

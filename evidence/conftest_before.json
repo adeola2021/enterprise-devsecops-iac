@@ -1,0 +1,41 @@
+[
+	{
+		"filename": "plan.json",
+		"namespace": "cloud_security",
+		"successes": 0,
+		"warnings": [
+			{
+				"msg": "[IAM_WILDCARD] aws_iam_role_policy.god_mode: Allow Action:* on Resource:* (needs manual least-privilege rewrite)",
+				"metadata": {
+					"query": "data.cloud_security.warn"
+				}
+			},
+			{
+				"msg": "[IAM_WILDCARD] aws_iam_role_policy.god_mode_heredoc: Allow Action:* on Resource:* (needs manual least-privilege rewrite)",
+				"metadata": {
+					"query": "data.cloud_security.warn"
+				}
+			}
+		],
+		"failures": [
+			{
+				"msg": "[S3_ENCRYPTION] aws_s3_bucket.logs: S3 bucket has no server-side encryption configuration",
+				"metadata": {
+					"query": "data.cloud_security.deny"
+				}
+			},
+			{
+				"msg": "[SG_OPEN_ADMIN] aws_security_group.web: ingress 22-22 open to the internet",
+				"metadata": {
+					"query": "data.cloud_security.deny"
+				}
+			},
+			{
+				"msg": "[SG_OPEN_ADMIN] aws_security_group.web: ingress 3389-3389 open to the internet",
+				"metadata": {
+					"query": "data.cloud_security.deny"
+				}
+			}
+		]
+	}
+]

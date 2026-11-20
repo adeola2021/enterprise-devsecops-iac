@@ -1,0 +1,60 @@
+name: iac-security
+on:
+  pull_request:
+    paths: ["terraform/**", "policies/**", "terraform_autofixer.py", "tests/**"]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    env:
+      TF_DIR: terraform/fixture
+      CONFTEST_VERSION: "0.62.0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Install tools
+        run: |
+          pip install checkov pytest
+          curl -sL https://github.com/open-policy-agent/opa/releases/latest/download/opa_linux_amd64_static -o opa
+          chmod +x opa && sudo mv opa /usr/local/bin/
+          curl -sL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xz conftest
+          sudo mv conftest /usr/local/bin/
+
+      - name: Gate 1 - fixer unit tests
+        run: pytest -q
+
+      - name: Gate 2 - Rego check and tests
+        run: |
+          opa check policies/ --strict
+          opa test policies/ -v
+
+      - name: Gate 3 - terraform fmt and validate
+        run: |
+          terraform fmt -check -recursive terraform/
+          terraform -chdir=$TF_DIR init -backend=false -input=false
+          terraform -chdir=$TF_DIR validate
+
+      # CKV_AWS_19 passes by default on current Checkov (S3 SSE-S3 is automatic);
+      # CKV_AWS_145 is the check that flags a bucket without KMS default encryption.
+      - name: Gate 4 - Checkov (blocking, scoped to remediated checks)
+        run: |
+          checkov -d $TF_DIR --framework terraform --compact \
+            --check CKV_AWS_19,CKV_AWS_24,CKV_AWS_25,CKV_AWS_145
+
+      - name: Checkov IAM (advisory)
+        run: |
+          checkov -d $TF_DIR --framework terraform --compact --soft-fail \
+            --check CKV_AWS_63,CKV_AWS_355
+
+      - name: Gate 5 - OPA/Conftest on plan
+        run: |
+          terraform -chdir=$TF_DIR plan -input=false -out=tfplan
+          terraform -chdir=$TF_DIR show -json tfplan > plan.json
+          conftest test plan.json -p policies -n cloud_security

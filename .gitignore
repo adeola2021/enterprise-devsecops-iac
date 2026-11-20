@@ -95,3 +95,17 @@ terraform-backups/
 
 # Disabled local Terraform variable files
 *.tfvars.disabled
+
+# iac-autofix
+__pycache__/
+.pytest_cache/
+plan.json
+terraform/fixture/.terraform/
+terraform/fixture/*.tfstate*
+terraform/fixture/tfplan
+
+# local-only
+/iac-autofix/
+/backups/
+/reports/phase6/
+terraform/fixture/.terraform.lock.hcl
