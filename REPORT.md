@@ -1,34 +1,38 @@
 # IaC Mutation & Policy Remediation Report
 **Project:** Autonomous Policy-as-Code Remediation & Dynamic IaC Mutation Engine
-**Author:** Segun | **Run date:** 2026-11-18
+**Author:** Segun | **Run date:** 2026-11-19 to 2026-11-20
+**Repo:** adeola2021/enterprise-devsecops-iac | **PR:** #15 (base: `iac-autofix-demo`)
 
 ## 1. Executive summary
-A findings-driven pipeline now detects three classes of cloud misconfiguration with OPA/Rego and Checkov,
-rewrites the Terraform source to fix two of them, validates the result, and prepares a pull request.
-On the deliberately vulnerable fixture, **Conftest went from 3 failures to 0** and **Checkov's blocking scope
-went from 3 failed checks to 4/4 passed**. The generated diff is 13 insertions / 2 deletions, touching only
-security-relevant lines. Wildcard IAM is detected but deliberately **not** auto-fixed.
+A findings-driven pipeline detects three classes of cloud misconfiguration with OPA/Rego (Conftest) and Checkov,
+rewrites the Terraform source to fix two of them, validates the result, rolls back on failure, and opens a
+pull request. Wildcard IAM is detected but deliberately **not** auto-fixed; a human scoped it in a second commit.
 
-### Execution environment: what was real and what was not
-| Item | Status |
+| Stage | Conftest (plan JSON) | Checkov (blocking scope) |
+|---|---|---|
+| Before | 3 failures, 2 warnings | 3 failed (CKV_AWS_24, 25, 145) |
+| After autofix | 0 failures, 2 IAM warnings | 4 passed, 0 failed |
+| After human IAM commit | 0 failures, **0 warnings** | IAM checks 6 passed, 0 failed |
+
+The autofix diff is 13 insertions and 2 deletions in one file. PR #15 passes all 4 CI checks.
+
+### Execution environment (all real)
+| Tool | Version |
 |---|---|
-| OPA 1.6.0 (`opa check --strict`, 4/4 Rego tests) | Ran for real |
-| Conftest 0.62.0, Checkov 3.4.5 | Ran for real |
-| Autofixer, 10 pytest tests, negative/rollback tests | Ran for real |
-| `fmt` | Ran for real, using **OpenTofu 1.10.6** (`tofu fmt`; same formatter as `terraform fmt`) |
-| `terraform init / validate / plan` | **Not run.** The sandbox blocks `releases.hashicorp.com` and the provider registry, so the AWS provider cannot be downloaded. |
-| Conftest input | A **mock plan** (`tools/mock_plan.py`) built from the HCL, not a real `terraform show -json` |
-| `terraform validate` substitute | `fmt` plus an `hcl2` **syntax** parse (`--validate-mode offline`). It does not check provider schema. |
-| Pull request on GitHub, Actions run | **Not run.** There is no `gh` and no remote here. `--local-only` created the branch and commit and wrote the PR body. |
-
-The code paths for the real runs exist (`--validate-mode full`, `PLAN_MODE=real ./demo.sh`, the workflow). Section 7 lists what to run on your workstation to close these gaps.
+| Terraform | 1.16.0 (real `init`, `validate`, `plan`, `show -json`; AWS provider v5.100.0) |
+| OPA / Conftest | 1.19.0 / 0.69.0 |
+| Checkov | 3.3.16 |
+| Python / pytest | 3.10.12 / 9.1.1 |
+| GitHub | Real PR #15, real Actions runs, authenticated with `gh` as `adeola2021` |
 
 ## 2. Architecture
 ```mermaid
 flowchart LR
   A[terraform plan JSON] --> C[Conftest + cloud_security.rego]
+  H[raw .tf] --> C2[Conftest + cloud_security_hcl.rego]
   B[.tf files] --> D[Checkov]
-  C -->|JSON failures/warnings| N[findings normaliser]
+  C -->|failures/warnings JSON| N[findings normaliser]
+  C2 -->|failures/warnings JSON| N
   D -->|failed_checks JSON| N
   N --> F{rule}
   F -->|S3_ENCRYPTION| S3[fix_s3: add SSE resource]
@@ -37,58 +41,114 @@ flowchart LR
   S3 --> V[fmt + validate]
   SG --> V
   V -->|fail| R[rollback files]
-  V -->|pass| P[commit + PR body]
+  V -->|pass| P[scripts/iac_pr.py: commit + PR]
+  P --> CI[CI gates] --> HR[human review + IAM fix]
 ```
-**Contract between policy and fixer:** every Rego message begins `[RULE_ID] resource.address:`. The fixer parses that prefix, and maps Checkov `check_id`s to the same rule IDs. Findings from both tools are de-duplicated, so a bucket flagged by both is fixed once.
+**Contract between policy and fixer:** every Rego message begins `[RULE_ID] resource.address:`. The fixer parses that
+prefix and maps Checkov `check_id`s to the same rule IDs. Findings from both tools are de-duplicated, so a resource
+flagged by several sources is fixed once (extra sources show as `skipped`).
 
-**Why text-level edits rather than parse-and-regenerate:** `hcl2` parses HCL into dicts but cannot write it back, which loses comments and formatting. Surgical edits keep diffs reviewable. A string, comment and heredoc-aware brace matcher locates resource boundaries, so `}` inside strings, comments and heredocs is not mistaken for a block end.
+**Why text-level edits:** `hcl2` parses HCL into dicts but cannot write it back, which loses comments and formatting.
+Surgical edits keep diffs reviewable. A string, comment and heredoc-aware brace matcher finds resource boundaries.
 
-## 3. Rego policies (`policies/cloud_security.rego`)
-| Rule | Level | Logic |
+## 3. Rego policies
+Two packages share the same message tags, so either scan path feeds the fixer.
+
+| Package | Input | Used for |
 |---|---|---|
-| S3 encryption | `deny` | Bucket must have a standalone `aws_s3_bucket_server_side_encryption_configuration` that **references it** (checked in `configuration`, since `bucket.id` is unknown at plan time), or a legacy inline block. |
-| SG hardening | `deny` | Ingress on `aws_security_group` or `aws_security_group_rule` that includes 22 or 3389 (range- and `-1`-aware) from `0.0.0.0/0` or `::/0`. Port 443 is correctly allowed. |
-| IAM least privilege | `warn` | Allow statement with `Action:"*"` **and** `Resource:"*"` (string or array form) in inline/managed policy resources. `warn` because remediation needs human judgement. |
+| `cloud_security` (`policies/cloud_security.rego`) | `terraform show -json` plan | Main scan path, CI Gate 5, `demo.sh` |
+| `cloud_security_hcl` (`policies/cloud_security_hcl.rego`) | Raw `.tf` parsed by Conftest | Fast pre-plan scan, no provider needed |
 
-`opa check --strict`: clean. `opa test`: **4/4 pass**.
+| Rule | Level | Logic | Checkov counterpart |
+|---|---|---|---|
+| S3 encryption | `deny` | Bucket needs a standalone SSE resource referencing it, or a legacy inline block | CKV_AWS_145 |
+| SG hardening | `deny` | Ingress covering 22 or 3389 from `0.0.0.0/0` or `::/0`; 443 allowed | CKV_AWS_24, 25 |
+| IAM least privilege | `warn` | Allow with `Action:"*"` and `Resource:"*"`; `warn` because the fix needs human judgement | CKV_AWS_63, 355 |
+
+`opa check --strict` is clean. `opa test`: **11/11 pass** (4 plan-JSON tests and 7 raw-HCL tests, `evidence/` Section 8).
 
 ## 4. Mutation engine (`terraform_autofixer.py`)
-- **S3:** inserts an SSE resource after the bucket (KMS if `--kms-key-arn` is given, otherwise AES256). Idempotent.
-- **Security groups:** rewrites `0.0.0.0/0` to `--admin-cidr` **only inside ingress blocks that expose 22/3389/all-protocol**. 443 is untouched.
-- **IAM:** reported as `manual`.
-- **Safety net:** `fmt`, then validation; on any failure all files are restored. Verified: after a forced validation failure the file hash was identical.
-- **Input hardening** (added after a bug found during negative testing): `--admin-cidr` must parse as a network and may not be `/0`; `--kms-key-arn` must match the KMS ARN grammar, because both values are written into HCL. Per-finding scan errors are reported as `error` rather than crashing the run.
+- **S3:** inserts `aws_s3_bucket_server_side_encryption_configuration` after the bucket (KMS with `--kms-key-arn`). Idempotent.
+- **Security groups:** rewrites `0.0.0.0/0` to `--admin-cidr` only inside ingress blocks that expose 22/3389/all-protocol.
+- **IAM:** reported as `manual`, never edited.
+- **Safety net:** `fmt`, then `validate`; on failure every changed file is restored and the exit code is 1.
+- **Input hardening:** `--admin-cidr` must be a valid network and not `/0`; `--kms-key-arn` must match the KMS ARN grammar.
 - **Dry run:** `--dry-run` prints a unified diff and writes nothing.
+- **PR integration:** `scripts/generate_security_pr.py --mode iac` calls `scripts/iac_pr.py`. The default mode stays `appsec`, so the Phase 6 Semgrep behaviour is unchanged. The PR commit uses an explicit pathspec and refuses to run if the index has staged changes.
 
 ## 5. Evidence
-Full output: `reports/transcript.txt`, `reports/negative_tests.txt`.
 
-**Before (Conftest on the mock plan):**
-```
-WARN - [IAM_WILDCARD] aws_iam_role_policy.god_mode: Allow Action:* on Resource:* ...
+### 5.1 Detection (before)
+Raw HCL, `cloud_security_hcl` (`evidence/01_conftest_before.txt`):
+WARN - [IAM_WILDCARD] aws_iam_role_policy.god_mode_heredoc: Allow Action:* on Resource:* ...
 FAIL - [S3_ENCRYPTION] aws_s3_bucket.logs: S3 bucket has no server-side encryption configuration
 FAIL - [SG_OPEN_ADMIN] aws_security_group.web: ingress 22-22 open to the internet
 FAIL - [SG_OPEN_ADMIN] aws_security_group.web: ingress 3389-3389 open to the internet
-4 tests, 0 passed, 1 warning, 3 failures
-```
-**Before (Checkov):** `CKV_AWS_24` (SSH), `CKV_AWS_25` (RDP), `CKV_AWS_145` (S3 KMS) failed; plus advisory `CKV_AWS_63` and `CKV_AWS_355` (IAM).
+Plan JSON, `cloud_security` (`evidence/01_conftest_plan_before.txt`): the same 3 failures plus **2** IAM warnings
+(`god_mode` and `god_mode_heredoc`). Checkov (`evidence/01_checkov_before.txt`, `checkov_before.json`) reported
+CKV_AWS_24, 25, 145, 63, 355, CKV2_AWS_40 and others.
 
-**Autofix commit** (`fix(iac): remediate Checkov/OPA violations`, 13+/2−): adds `aws_s3_bucket_server_side_encryption_configuration.logs_sse`; changes the 22 and 3389 CIDRs to `10.0.0.0/8`.
+### 5.2 Autofix (`evidence/02_autofix_run.txt`, `02_autofix.diff`)
+[APPLIED] S3_ENCRYPTION aws_s3_bucket.logs checkov:CKV_AWS_145 added aws_s3_bucket_server_side_encryption_configuration (KMS)
+[APPLIED] SG_OPEN_ADMIN aws_security_group.web checkov:CKV_AWS_24 restricted 2 admin ingress rule(s) to 10.0.0.0/8
+[MANUAL ] IAM_WILDCARD aws_iam_role_policy.god_mode / god_mode_heredoc needs a human-authored least-privilege policy
+The diff adds the SSE resource and changes the 22 and 3389 CIDRs to `10.0.0.0/8`. After the run, `grep -n "0.0.0.0/0"`
+finds only line 56, the **port 443 rule, untouched**.
 
-**After:** Conftest `4 tests, 3 passed, 1 warning, 0 failures`; Checkov blocking scope `Passed checks: 4, Failed checks: 0`; `tofu fmt -check` clean; IAM still flagged for a human, as intended.
+**Idempotence** (`evidence/03_autofix_idempotent.txt`): the second run prints no `[APPLIED]` lines, and
+`git diff --stat` stays at 13 insertions and 2 deletions.
 
-**Negative tests:** an injected KMS ARN is rejected; a `/0` admin CIDR is rejected; a failed validation triggers rollback with an identical file hash.
+### 5.3 Validation and re-scan (after autofix)
+- `terraform fmt -check` was silent and `terraform validate` printed `Success! The configuration is valid.`
+- Conftest on a real plan (`evidence/05_conftest_after.txt`): `4 tests, 2 passed, 2 warnings, 0 failures`.
+- Checkov blocking scope (`evidence/05_checkov_after.txt`): `Passed checks: 4, Failed checks: 0`.
+- pytest: 10 passed (`evidence/04_pytest_after_rollback.txt` shows 12 after the rollback tests below).
+
+### 5.4 Rollback tests (`tests/test_rollback.py`, 12 passed total)
+- When `validate` fails, the file is restored byte-for-byte and the exit code is 1.
+- When `validate` passes, the patch is kept and the 443 rule is untouched.
+
+### 5.5 Pull request #15
+- Base `iac-autofix-demo`; the diff touches exactly one file, `terraform/fixture/main.tf` (`evidence/06_pr_diff.txt`).
+- Commit 1: the autofix. Commit 2 (`b536956`): a human replaced both IAM wildcards with `s3:GetObject` on the demo
+  bucket's objects. After it: Conftest `4 passed, 0 warnings, 0 failures` (`evidence/07_conftest_final.txt`) and
+  Checkov IAM checks `6 passed, 0 failed` (`evidence/07_checkov_iam_final.txt`).
+- **First CI run** (`evidence/06_pr_checks_first_run.txt`, `06_legacy_pipeline_failure.log`): `gates` passed,
+  `IaC Security Checks` failed. See Finding 4.
+- **Final CI run** (`evidence/08_pr_checks_green.txt`, `08_pr_view_green.json`): **all 4 checks passed**:
+  `gates`, `IaC Security Checks`, `Checkov` and `Semgrep OSS`.
+- Screenshots: `evidence/screenshots/`.
 
 ## 6. Findings worth knowing
-1. **`CKV_AWS_19` passes on current Checkov.** S3 now encrypts all objects with SSE-S3 by default, so the unencrypted-bucket finding appears as **`CKV_AWS_145`, which demands KMS**. An AES256 fix satisfies the OPA rule but not `CKV_AWS_145`, so the pipeline needs a real `--kms-key-arn` to go fully green. The demo ARN (`.../key/REPLACE-ME`) is a placeholder and must be replaced.
-2. **`terraform fmt -recursive` can reformat unrelated code.** The first run produced a stray whitespace change from a pre-existing misformatted line. The repo now commits an fmt-clean baseline, and the fixer keeps diffs minimal only if the repo is already fmt-clean.
-3. **The guide's `pytest` command needs `pytest.ini` (`pythonpath = .`)** to import the fixer from `tests/`.
-4. **Overlapping findings are normal.** One resource can be flagged by Checkov and OPA, and by two Checkov IDs. De-duplication shows as `skipped` rows in the PR table.
+1. **A silent policy: 8/8 tests passed and 0 violations were reported.** Conftest wraps every HCL resource body in a one-element array (`"logs": [ {...} ]`), but the first rules and unit tests assumed an unwrapped object. The unit tests passed on hand-written input while real HCL never matched. Fix: a `body()` unwrapping helper, and unit tests built from the real `conftest parse` shape. **Lesson: always run the policy against real parsed input, not only unit-test fixtures.**
+2. **`jsonencode` policies are invisible to raw-HCL Conftest.** Conftest sees them as the text `${jsonencode(...)}`. Only the plan-JSON path (and Checkov) catches `god_mode`. This is why the plan path is the main one.
+3. **`CKV_AWS_19` does not fire on current Checkov; `CKV_AWS_145` (KMS) does.** An AES256 fix satisfies OPA but not CKV_AWS_145, so the pipeline needs `--kms-key-arn`. The demo ARN `.../key/REPLACE-ME` is a placeholder.
+4. **A legacy pipeline failed on the fixture.** The Phase 4 workflow `iac-security-pipeline.yml` runs the Checkov action over all of `terraform/` with the full rule set and no soft-fail, so it failed on deliberately insecure fixture lines. The `Upload Checkov` SARIF error was a downstream symptom. Fix (`b3bea05`): `skip_path: terraform/fixture` on that one step. This is a documented exclusion of test data, not a weakened gate; the rest of `terraform/` is still scanned. `phase5_checkov_gate.sh` blocks only CKV_AWS_24 and 145, which the patched fixture passes.
+5. **Autofix commit contained more than the fix.** A test run committed a staged file deletion along with the fixture. Fix: commit with an explicit pathspec, and refuse to run when anything is staged.
+6. **Overlapping findings are normal.** One resource can be flagged by OPA and by two Checkov IDs; de-duplication shows as `skipped` rows in the PR table.
+7. **`gh` limits.** This `gh` version has no `pr checks --watch` and no `pr diff --name-only`; plain `gh pr checks` exits non-zero while any check fails.
 
-## 7. Limitations and remaining verification
-- **Run on a workstation to complete the evidence:** `./demo.sh` (real `terraform plan`, `init`, `validate`), then push the PR branch and capture `gh pr checks`. The mock plan is a stand-in and could diverge from a real plan.
+## 7. Limitations
+- **Placeholders need real values:** the admin CIDR (`10.0.0.0/8`) and the KMS key ARN are human decisions; the PR body carries a reviewer checklist. The scoped IAM policy in the human commit is an illustrative example, not a real application requirement.
 - Modules (`module.*`) are not handled; `dynamic "ingress"` and variable-held CIDRs are reported, not fixed; IPv6 `::/0` is detected but not rewritten.
-- The replacement admin CIDR and the KMS key are human decisions; the PR template carries a reviewer checklist for both.
-- Checkov check IDs drift across versions; the map in the fixer was verified against 3.4.5 only.
-- **CI caveats:** PRs opened with `GITHUB_TOKEN` do not trigger workflows (use your own `gh auth`, a PAT, or an App token). `main` is red by design while the fixture is vulnerable.
-- The Phase 6 Semgrep flow was not available, so `run_appsec()` in `generate_security_pr.py` is a documented hook, not an integration.
+- Raw-HCL Conftest cannot see `jsonencode` policies (Finding 2).
+- Checkov check IDs drift across versions; the map was verified against 3.3.16 only.
+- Only the three required classes are auto-fixed. Checkov also reports versioning, lifecycle, logging and public-access-block findings on the bucket, which are out of scope and risky to automate.
+- **PR base:** PR #15 targets the baseline branch, never `main`, because the baseline fixture fails the gates by design. Do not merge the baseline into `main`.
+- **CI token:** PRs created with the default `GITHUB_TOKEN` inside Actions do not trigger workflows. This PR was created from the workstation with `gh` auth, so it triggered normally; use a PAT or App token if the flow moves into Actions.
+- **Phase 6 integration:** `--mode iac` is exercised end to end. `--mode all` (Semgrep, then IaC) and the Semgrep path were not re-run in this exercise; the default `appsec` mode is unchanged.
+- `demo.sh` passes a syntax check (`bash -n`) and its paths point at `scripts/generate_security_pr.py`, but the full script was not re-run end to end after the path change. The evidence above came from the individual steps run by hand.
+
+## 8. Reproduce
+```bash
+opa check policies/ --strict && opa test policies/ -v          # 11/11
+python3 -m pytest -q                                            # 12 passed
+conftest test plan.json -p policies -n cloud_security           # plan path
+conftest test terraform/fixture -p policies --all-namespaces    # raw-HCL path
+python3 scripts/generate_security_pr.py --mode iac --base iac-autofix-demo \
+  --iac-findings evidence/conftest_before.json evidence/checkov_before.json \
+  --kms-key-arn arn:aws:kms:us-east-1:111122223333:key/REPLACE-ME
+```
+
+## 9. Future work
+A KMS key-creation fixer, `tflint`, module-aware remediation, and a `jsonencode`-aware raw-HCL rule.
