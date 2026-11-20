@@ -110,6 +110,15 @@ def main():
     ap.add_argument("--base", default=None, help="base branch (default: current)")
     ap.add_argument("--repo", default=None, help="owner/name (default: from origin)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--mode", choices=["appsec", "iac", "all"], default="appsec")
+    ap.add_argument("--tf-dir", default="terraform/fixture")
+    ap.add_argument("--iac-findings", nargs="*",
+                    default=["reports/checkov.json", "reports/conftest.json"])
+    ap.add_argument("--admin-cidr", default="10.0.0.0/8")
+    ap.add_argument("--kms-key-arn")
+    ap.add_argument("--tf-bin", default="terraform")
+    ap.add_argument("--validate-mode", choices=["full", "offline"], default="full")
+    ap.add_argument("--local-only", action="store_true")
     args = ap.parse_args()
 
     base = args.base or sh("git", "branch", "--show-current")
@@ -120,6 +129,12 @@ def main():
         if not m:
             sys.exit("Cannot work out owner/name from origin; use --repo")
         repo_name = m.group(1)
+
+    if args.mode in ("iac", "all"):
+        from iac_pr import run_iac
+        run_iac(args, base)
+        if args.mode == "iac":
+            return
 
     gh_repo = None
     if args.dry_run:

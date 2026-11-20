@@ -1,0 +1,11 @@
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode         checkov:CKV_AWS_355 wildcard IAM needs a human-authored least-privilege policy
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode         checkov:CKV_AWS_63 wildcard IAM needs a human-authored least-privilege policy
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode         opa                wildcard IAM needs a human-authored least-privilege policy
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode_heredoc checkov:CKV_AWS_355 wildcard IAM needs a human-authored least-privilege policy
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode_heredoc checkov:CKV_AWS_63 wildcard IAM needs a human-authored least-privilege policy
+[MANUAL ] IAM_WILDCARD   aws_iam_role_policy.god_mode_heredoc opa                wildcard IAM needs a human-authored least-privilege policy
+[SKIPPED] S3_ENCRYPTION  aws_s3_bucket.logs                   checkov:CKV_AWS_145 encryption resource already exists
+[SKIPPED] S3_ENCRYPTION  aws_s3_bucket.logs                   opa                encryption resource already exists
+[SKIPPED] SG_OPEN_ADMIN  aws_security_group.web               checkov:CKV_AWS_24 nothing left to change (already remediated, or CIDR is dynamic/variable)
+[SKIPPED] SG_OPEN_ADMIN  aws_security_group.web               checkov:CKV_AWS_25 nothing left to change (already remediated, or CIDR is dynamic/variable)
+[SKIPPED] SG_OPEN_ADMIN  aws_security_group.web               opa                nothing left to change (already remediated, or CIDR is dynamic/variable)

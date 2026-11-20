@@ -109,3 +109,5 @@ terraform/fixture/tfplan
 /backups/
 /reports/phase6/
 terraform/fixture/.terraform.lock.hcl
+reports/autofix_summary.json
+reports/pr_body.md

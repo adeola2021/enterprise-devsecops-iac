@@ -1,0 +1,4 @@
+WARN - plan.json - cloud_security - [IAM_WILDCARD] aws_iam_role_policy.god_mode: Allow Action:* on Resource:* (needs manual least-privilege rewrite)
+WARN - plan.json - cloud_security - [IAM_WILDCARD] aws_iam_role_policy.god_mode_heredoc: Allow Action:* on Resource:* (needs manual least-privilege rewrite)
+
+4 tests, 2 passed, 2 warnings, 0 failures, 0 exceptions

@@ -30,7 +30,7 @@ checkov -d $FIX --framework terraform --check $CK,CKV_AWS_63,CKV_AWS_355 -o json
 checkov -d $FIX --framework terraform --compact --quiet --check $CK 2>/dev/null | grep -E "Passed checks|Check:|FAILED"
 
 banner "3. FIX: generate_security_pr.py --mode iac"
-python3 generate_security_pr.py --mode iac --tf-bin $TF_BIN --validate-mode $VALIDATE_MODE \
+python3 scripts/generate_security_pr.py --mode iac --tf-bin $TF_BIN --validate-mode $VALIDATE_MODE \
    --kms-key-arn "$KMS" --local-only
 
 banner "4. DIFF of the autofix commit"
