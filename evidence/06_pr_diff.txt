@@ -1,0 +1,39 @@
+diff --git a/terraform/fixture/main.tf b/terraform/fixture/main.tf
+index adb7b12..b58cb7f 100644
+--- a/terraform/fixture/main.tf
++++ b/terraform/fixture/main.tf
+@@ -19,6 +19,17 @@ resource "aws_s3_bucket" "logs" {
+   bucket = "segun-demo-logs-bucket"
+ }
+ 
++resource "aws_s3_bucket_server_side_encryption_configuration" "logs_sse" {
++  bucket = aws_s3_bucket.logs.id
++
++  rule {
++    apply_server_side_encryption_by_default {
++      sse_algorithm     = "aws:kms"
++      kms_master_key_id = "arn:aws:kms:us-east-1:111122223333:key/REPLACE-ME"
++    }
++  }
++}
++
+ # VIOLATION 2: SSH and RDP open to the world (443 must be left alone)
+ resource "aws_security_group" "web" {
+   name        = "web-sg"
+@@ -28,14 +39,14 @@ resource "aws_security_group" "web" {
+     from_port   = 22
+     to_port     = 22
+     protocol    = "tcp"
+-    cidr_blocks = ["0.0.0.0/0"]
++    cidr_blocks = ["10.0.0.0/8"]
+   }
+ 
+   ingress {
+     from_port   = 3389
+     to_port     = 3389
+     protocol    = "tcp"
+-    cidr_blocks = ["0.0.0.0/0"]
++    cidr_blocks = ["10.0.0.0/8"]
+   }
+ 
+   ingress {

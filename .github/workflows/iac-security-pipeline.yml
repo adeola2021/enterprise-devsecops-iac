@@ -117,6 +117,7 @@ jobs:
           directory: terraform
           framework: terraform
           quiet: false
+          skip_path: terraform/fixture   # deliberately insecure autofix test data
 
       # --------------------------------------------------
       # Phase 4: Semgrep and Checkov SARIF Integration
